@@ -35,12 +35,14 @@ body <- dashboardBody(
       h4("Add metadata to the Cancer Complexity Knowledge Portal", align = "center"),
       br(),
       h4(strong("Overview")),
+      p("So far, we have annotated..."),
       fluidRow(
         valueBoxOutput("num_grants", width = 3),
         valueBoxOutput("num_pubs", width = 3),
         valueBoxOutput("num_datasets", width = 3),
         valueBoxOutput("num_tools", width = 3)
       ),
+      p("Let's annotate even more! Go to ", strong("Validate and Upload"), " to start.")
     ),
 
     tabItem(
@@ -51,16 +53,23 @@ body <- dashboardBody(
             title = "Instructions",
             width = "100%", collapsible = TRUE, collapsed = TRUE,
             p("In order to add new metadata to the portal, the values must ",
-              "first be validated. Select the type of manifest to be uploaded, ",
-            "then upload the file. Note that it must be a .xlsx file with at ",
-            "least two sheets: one that contains the new metadata and another ",
-            "named `standard_terms` that contains a list of acceptable values."),
-            p("Templates are available below if needed:"),
+              "first be validated. Select the type of manifest to be ",
+              "uploaded, then upload the file. A file preview will be ",
+              "displayed on the right. Click on ", strong("Validate."), "If ",
+              "all checks pass, feel free to upload; otherwise, edit ",
+              "accordingly then re-upload the manifest."),
+            p(strong("Note:"), "the file must be .xlsx and it is expected ",
+              "to have a sheet called standard_terms (list of the ",
+              "acceptable values). If needed, templates are available below:"),
             tags$ul(
-              tags$li("Publications"),
-              tags$li("Datasets"),
-              tags$li("Files"),
-              tags$li("Tools")
+              tags$li(a(href = "publications_manifest.xlsx", "Publications",
+                download = NA, target = "_blank")),
+              tags$li(a(href = "datasets_manifest.xlsx", "Datasets",
+                download = NA, target = "_blank")),
+              tags$li(a(href = "files_manifest.xlsx", "Files",
+                download = NA, target = "_blank")),
+              tags$li(a(href = "tools_manifest.xlsx", "Tools",
+                download = NA, target = "_blank"))
             )
           ),
 
