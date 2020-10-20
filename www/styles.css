@@ -1,4 +1,5 @@
 /*** Top navigation bar ***/
+/*
 .main-header {
     max-height: 50px
 }
@@ -21,28 +22,13 @@
 .message-menu {
     padding-top: 5px
 }
+*/
 
-/*** Sidebar ***/
-.left-side, .main-sidebar {
-    padding-top: 80px; 
-    font-weight: bold; 
-    font-size: 1.1em 
+/*** Box title ***/
+.box-header h3.box-title {
+   font-weight: bold;
+   font-size: 14px;
 }
-
-/*** Notification bar ***/
-.shiny-notification {
-    position:fixed;
-    bottom: 0;
-    right: 0;
-    width: 100%;
-}
-#shiny-notification-error {
-    height: 500px; 
-    padding :20px; 
-    display: table-cell
-}
-#shiny-notification-processing {background-color: #F7DC6F}
-#shiny-notification-success {background-color: #82E0AA}
 
 /*** Footer ***/
 footer {

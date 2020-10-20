@@ -2,6 +2,9 @@ library(shiny)
 library(shinyjs)
 library(shinydashboard)
 library(reticulate)
+library(readxl)
+library(tibble)
+library(DT)
 library(waiter)
 
 #' Global
