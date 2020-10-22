@@ -1,14 +1,29 @@
 source_python("synapse_funcs.py")
+source("helper_funcs.R")
+source("col_values.R")
 
-# helper: get count from current tables
+# get count from current tables
 count <- function(syn_id) {
   query <- sprintf("SELECT COUNT(*) AS n FROM %s", syn_id)
   return(syn_table_query(query)$asDataFrame()$n)
 }
 
-# helper: validate tool manifest
-validate_tool <- function(df, standard_terms) {
-  return(standard_terms$key[1])
+# modal with next step (based on dccvalidator's next_step_modal)
+next_step_upload <- function(results) {
+  is_failure <- purrr::map_lgl(results, function(x) {
+    inherits(x, "check_fail")
+  })
+  if (!any(is_failure)) {
+    showModal(
+      modalDialog(
+        title = "Great work!",
+        HTML(
+          "All validations have cleared. You may now upload the manifest."
+        ),
+        easyClose = TRUE
+      )
+    )
+  }
 }
 
 server <- function(input, output, session) {
@@ -41,7 +56,7 @@ server <- function(input, output, session) {
       })
       output$num_tools <- renderValueBox({
         valueBox(
-          count("syn21930566"), "Tools",
+         count("syn21930566"), "Tools",
           icon = icon("tools"), color = "light-blue"
         )
       })
@@ -91,28 +106,64 @@ server <- function(input, output, session) {
 
   observeEvent(input$manifest_file, {
     valid_upload <<- TRUE
-    hide("warning")
-    manifest <<- read_excel(input$manifest_file$datapath)
+    hide("missing_warning")
+    hide("empty_warning")
+    manifest <<- readxl::read_excel(input$manifest_file$datapath)
+    if (nrow(manifest) == 0) {
+      valid_upload <<- FALSE
+      show("empty_warning")
+    }
     tryCatch({
-      std_terms <<- read_excel(input$manifest_file$datapath, sheet = "standard_terms")
-      output$preview <- renderDT(manifest)
+      std_terms <<- readxl::read_excel(
+        input$manifest_file$datapath, 
+        sheet = "standard_terms"
+      )
+      output$preview <- DT::renderDT(manifest)
     }, error = function(err) {
       valid_upload <<- FALSE
-      show("warning")
-      output$preview <- renderDT({})
+      show("missing_warning")
+      output$preview <- DT::renderDT({})
     })
+    updateTabsetPanel(session, "validator_tabs", selected = "preview_tab")
   })
 
   observeEvent(input$validate_btn, {
     w$show()
     updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
-    output$validation_results <- renderUI({
-      if (input$type == "tool") {
-        validate_tool(manifest, std_terms)
-      }
-    })
+
+    checks <- list(
+      missing_cols = check_col_names(
+        manifest,
+        template[[input$type]],
+        success_msg = "All required columns are present",
+        fail_msg = "Missing columns in the manifest"
+      ),
+      dup_ids = check_id_dups(manifest, id[[input$type]]),
+      invalid_cols = check_annotation_keys(
+        manifest,
+        std_terms,
+        whitelist_keys = setdiff(template[[input$type]], std_cols),
+        success_msg = "All column names are valid",
+        fail_msg = "Some column names are invalid"
+      ),
+      incomplete_cols = check_cols_complete(
+        manifest,
+        required_cols = complete_cols[[input$type]],
+        success_msg = "All necessary columns have annotations",
+        fail_msg = "Some necessary columns are missing annotations"
+      ),
+      invalid_vals = check_listed_values(
+        manifest,
+        std_terms
+      )
+    )
+
+    callModule(results_boxes_server, "validation_results", checks)
     Sys.sleep(2)
     w$hide()
+
+    Sys.sleep(1)
+    next_step_upload(checks)
   })
 }
 

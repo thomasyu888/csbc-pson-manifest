@@ -12,8 +12,9 @@ sidebar <- dashboardSidebar(
     menuItem("Overview", tabName = "home", icon = icon("dashboard")),
     menuItem("Validate and Upload", tabName = "validator", icon = icon("cloud-upload-alt"))
   ),
+  uiOutput("diag"),
   HTML("<footer>
-            Made with ♥<br/>
+            Made with ♥ and dccvalidator functions<br/>
             Powered by Sage Bionetworks
       </footer>"
   )
@@ -97,9 +98,15 @@ body <- dashboardBody(
           div(
             align = "center",
             hidden(
-              span(id = "warning", style = "color:red",
+              span(id = "missing_warning", style = "color:red",
                 em("File is missing a `standard_terms` sheet. See ",
-                   strong("Instructions"), " for more details."), br(), br()
+                   strong("Instructions"), " for more details."), br()
+              )
+            ),
+            hidden(
+              span(id = "empty_warning", style = "color:red",
+                em("File is empty. Double-check the manifest and try again."),
+                br()
               )
             ),
             disabled(
@@ -125,8 +132,22 @@ body <- dashboardBody(
             tabPanel(
               "Validation Results",
               value = "results_tab",
-              style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
-              uiOutput("validation_results")
+              style = "height:78vh",
+#              box(
+#                title = "Successes (0)",
+#                status = "success", solidHeader = TRUE,
+#                collapsible = TRUE, collapsed = TRUE,
+#                width = 12,
+#                uiOutput("successes")
+#              ),
+#              box(
+#                title = "Failures (0)",
+#                status = "danger", solidHeader = TRUE,
+#                collapsible = TRUE, collapsed = TRUE,
+#                width = 12,
+#                uiOutput("failures")
+#              )
+              results_boxes_ui("validation_results")
             )
           )
         )
