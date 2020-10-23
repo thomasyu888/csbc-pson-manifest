@@ -13,7 +13,8 @@ next_step_upload <- function(results) {
   is_failure <- purrr::map_lgl(results, function(x) {
     inherits(x, "check_fail")
   })
-  if (!any(is_failure)) {
+  if (length(results) & !any(is_failure)) {
+    Sys.sleep(1)
     showModal(
       modalDialog(
         title = "Great work!",
@@ -119,51 +120,68 @@ server <- function(input, output, session) {
         sheet = "standard_terms"
       )
       output$preview <- DT::renderDT(manifest)
+      output$terms <- DT::renderDT(
+        std_terms,
+        options = list(pageLength = 50))
     }, error = function(err) {
       valid_upload <<- FALSE
       show("missing_warning")
       output$preview <- DT::renderDT({})
+      output$terms <- DT::renderDT({})
     })
     updateTabsetPanel(session, "validator_tabs", selected = "preview_tab")
   })
 
   observeEvent(input$validate_btn, {
     w$show()
-    updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
 
-    checks <- list(
-      missing_cols = check_col_names(
-        manifest,
-        template[[input$type]],
-        success_msg = "All required columns are present",
-        fail_msg = "Missing columns in the manifest"
-      ),
-      dup_ids = check_id_dups(manifest, id[[input$type]]),
-      invalid_cols = check_annotation_keys(
-        manifest,
-        std_terms,
-        whitelist_keys = setdiff(template[[input$type]], std_cols),
-        success_msg = "All column names are valid",
-        fail_msg = "Some column names are invalid"
-      ),
-      incomplete_cols = check_cols_complete(
-        manifest,
-        required_cols = complete_cols[[input$type]],
-        success_msg = "All necessary columns have annotations",
-        fail_msg = "Some necessary columns are missing annotations"
-      ),
-      invalid_vals = check_listed_values(
-        manifest,
-        std_terms
+    tryCatch({
+      results <- list(
+        missing_cols = check_col_names(
+          manifest,
+          template[[input$type]],
+          success_msg = "All required columns are present",
+          fail_msg = "Missing columns in the manifest"
+        ),
+        invalid_cols = check_annotation_keys(
+          manifest,
+          std_terms,
+          whitelist_keys = setdiff(template[[input$type]], std_cols),
+          success_msg = "All column names are valid",
+          fail_msg = "Some column names are invalid"
+        ),
+        incomplete_cols = check_cols_complete(
+          manifest,
+          required_cols = complete_cols[[input$type]],
+          success_msg = "All necessary columns have annotations",
+          fail_msg = "Some necessary columns are missing annotations"
+        ),
+        invalid_vals = check_listed_values(
+          manifest,
+          std_terms
+        )
       )
-    )
+      if (input$type != "file") {
+        dup_ids = check_id_dups(manifest, id[[input$type]])
+      }
+      updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
+      callModule(results_boxes_server, "validation_results", results)
+      Sys.sleep(3)
+      next_step_upload(results)
+    }, error = function(err) {
+      showModal(
+        modalDialog(
+          title = "Uh oh, something went wrong!",
+          HTML(
+            "`standard_terms` must have the following columns: 'key', 'value',
+            and 'columnType'. See templates for an example."),
+          easyClose = TRUE
+        )
+      )
+      updateTabsetPanel(session, "validator_tabs", selected = "terms_tab")
+    })
 
-    callModule(results_boxes_server, "validation_results", checks)
-    Sys.sleep(2)
     w$hide()
-
-    Sys.sleep(1)
-    next_step_upload(checks)
   })
 }
 

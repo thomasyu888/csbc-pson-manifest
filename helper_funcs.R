@@ -39,6 +39,9 @@ check_listed_value <- function(values, key, annotations) {
 
   # ignore empty values (which are valid) before collapsing the list
   values <- values[!is.na(values)]
+  if (!length(values)) {
+    return(values)
+  }
 
   # column may contain the annots as a list, so some concatenation and
   # splitting should be done before validation. all columns should use

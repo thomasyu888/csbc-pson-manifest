@@ -71,7 +71,9 @@ body <- dashboardBody(
                 download = NA, target = "_blank")),
               tags$li(a(href = "tools_manifest.xlsx", "Tools",
                 download = NA, target = "_blank"))
-            )
+            ),
+            span(style = "font-size:smaller",
+              em("Templates last updated 10/20/2020."))
           ),
 
           selectizeInput(
@@ -130,23 +132,17 @@ body <- dashboardBody(
               DT::DTOutput("preview")
             ),
             tabPanel(
+              "Standard Terms",
+              value = "terms_tab",
+              style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+              p("This will display the list of standard terms used to validate
+                the manifest."),
+              DT::DTOutput("terms"),
+            ),
+            tabPanel(
               "Validation Results",
               value = "results_tab",
               style = "height:78vh",
-#              box(
-#                title = "Successes (0)",
-#                status = "success", solidHeader = TRUE,
-#                collapsible = TRUE, collapsed = TRUE,
-#                width = 12,
-#                uiOutput("successes")
-#              ),
-#              box(
-#                title = "Failures (0)",
-#                status = "danger", solidHeader = TRUE,
-#                collapsible = TRUE, collapsed = TRUE,
-#                width = 12,
-#                uiOutput("failures")
-#              )
               results_boxes_ui("validation_results")
             )
           )

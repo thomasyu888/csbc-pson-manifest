@@ -30,7 +30,7 @@ template <- list(
 id <- list(
   "publication" = "pubMedId",
   "dataset" = "datasetId",
-  "file" = "fileName",
+  "file" = "",
   "tool" = "tool"
 )
 
