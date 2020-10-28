@@ -10,7 +10,9 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     id = "tabs",
     menuItem("Overview", tabName = "home", icon = icon("dashboard")),
-    menuItem("Validate and Upload", tabName = "validator", icon = icon("cloud-upload-alt"))
+    menuItem("Validate and Upload", tabName = "validator", 
+      icon = icon("cloud-upload-alt")
+    )
   ),
   uiOutput("diag"),
   HTML("<footer>
@@ -33,7 +35,8 @@ body <- dashboardBody(
     tabItem(
       tabName = "home",
       h2("CSBC/PS-ON Manifest Curator", align = "center"),
-      h4("Add metadata to the Cancer Complexity Knowledge Portal", align = "center"),
+      h4("Add metadata to the Cancer Complexity Knowledge Portal", 
+        align = "center"),
       br(),
       h4(strong("Overview")),
       p("So far, we have annotated..."),
@@ -43,7 +46,8 @@ body <- dashboardBody(
         valueBoxOutput("num_datasets", width = 3),
         valueBoxOutput("num_tools", width = 3)
       ),
-      p("Let's annotate even more! Go to ", strong("Validate and Upload"), " to start.")
+      p("Let's annotate even more! Go to ", strong("Validate and Upload"),
+        " to start.")
     ),
 
     tabItem(
@@ -53,23 +57,23 @@ body <- dashboardBody(
           box(
             title = "Instructions",
             width = "100%", collapsible = TRUE, collapsed = TRUE,
-            p("In order to add new metadata to the portal, the values must ",
-              "first be validated. Select the type of manifest to be ",
-              "uploaded, then upload the file. A file preview will be ",
-              "displayed on the right. Click on ", strong("Validate."), "If ",
-              "all checks pass, feel free to upload; otherwise, edit ",
-              "accordingly then re-upload the manifest."),
-            p(strong("Note:"), "the file must be .xlsx and it is expected ",
-              "to have a sheet called standard_terms (list of the ",
-              "acceptable values). If needed, templates are available below:"),
+            p("In order to add new metadata to the portal, the values must
+               first be validated. Select the type of manifest to be uploaded,
+               hen upload the file. A file preview will be displayed on the
+               right. Click on ", strong("Validate."), "If all checks pass,
+               feel free to upload; otherwise, edit accordingly then re-upload
+               the manifest."),
+            p(strong("Note:"), "the file must be .xlsx and it is expected to
+              have a sheet called standard_terms (list of the acceptable 
+              values). If needed, templates are available below:"),
             tags$ul(
-              tags$li(a(href = "publications_manifest.xlsx", "Publications",
+              tags$li(a(href = "templates/publications_manifest.xlsx",
+                "Publications", download = NA, target = "_blank")),
+              tags$li(a(href = "templates/datasets_manifest.xlsx", "Datasets",
                 download = NA, target = "_blank")),
-              tags$li(a(href = "datasets_manifest.xlsx", "Datasets",
+              tags$li(a(href = "templates/files_manifest.xlsx", "Files",
                 download = NA, target = "_blank")),
-              tags$li(a(href = "files_manifest.xlsx", "Files",
-                download = NA, target = "_blank")),
-              tags$li(a(href = "tools_manifest.xlsx", "Tools",
+              tags$li(a(href = "templates/tools_manifest.xlsx", "Tools",
                 download = NA, target = "_blank"))
             ),
             span(style = "font-size:smaller",
@@ -93,7 +97,7 @@ body <- dashboardBody(
             label = "Upload manifest (.xlsx)",
             accept = c(
               ".xlsx",
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #nolint
             )
           ),
 

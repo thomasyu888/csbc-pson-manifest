@@ -1,6 +1,9 @@
+synapseclient <- reticulate::import('synapseclient')
+
 source_python("synapse_funcs.py")
-source("helper_funcs.R")
+source("validation_funcs.R")
 source("col_values.R")
+source("synapse_ids.R")
 
 # get count from current tables
 count <- function(syn_id) {
@@ -9,18 +12,28 @@ count <- function(syn_id) {
 }
 
 # modal with next step (based on dccvalidator's next_step_modal)
-next_step_upload <- function(results) {
+next_step_modal <- function(results, type) {
   is_failure <- purrr::map_lgl(results, function(x) {
     inherits(x, "check_fail")
   })
+  if (type == "file") {
+    instructions = p("File manifests are manually added by our internal team.
+                     Please email the manifest file to Verena at
+                     verena.chung@sagebase.org to add the new annotations.")
+  } else {
+    instructions = tagList(
+      p("You may now upload the manifest by clicking the button below."),
+      actionButton("upload_btn", class="btn-lg btn-block",
+        icon = icon("cloud-upload-alt"), "Upload to Synapse")
+    )
+  }
   if (length(results) & !any(is_failure)) {
     Sys.sleep(1)
     showModal(
       modalDialog(
-        title = "Great work!",
-        HTML(
-          "All validations have cleared. You may now upload the manifest."
-        ),
+        id = "next_step",
+        title = "Validation Checks Passed!",
+        instructions,
         easyClose = TRUE
       )
     )
@@ -29,6 +42,9 @@ next_step_upload <- function(results) {
 
 server <- function(input, output, session) {
 
+  ### grant information for annotations later
+  grants <- tibble()
+
   ## SYNAPSE LOGIN ############
   session$sendCustomMessage(type = "read_cookie", message = list())
   observeEvent(input$cookie, {
@@ -36,9 +52,12 @@ server <- function(input, output, session) {
       syn_login(sessionToken = input$cookie, rememberMe = FALSE)
 
       ### display overview stats
+      grants <<- syn_table_query(sprintf(
+        "SELECT grantId, grantName, grantNumber FROM %s", "syn21918972")
+        )$asDataFrame()
       output$num_grants <- renderValueBox({
         valueBox(
-          count("syn21918972"), "Grants",
+          nrow(grants), "Grants",
           icon = icon("award"), color = "yellow"
         )
       })
@@ -79,8 +98,13 @@ server <- function(input, output, session) {
         html = tagList(
           img(src = "synapse_logo.png", height = "120px"),
           h3("Looks like you're not logged in!"),
-          span("Please ", a("login", href = "https://www.synapse.org/#!LoginPlace:0", target = "_blank"),
-               " to Synapse, then refresh this page.")
+          span("Please ",
+            a("login", 
+              href = "https://www.synapse.org/#!LoginPlace:0", 
+              target = "_blank"
+            ),
+            " to Synapse, then refresh this page."
+          )
         )
       )
     })
@@ -94,7 +118,7 @@ server <- function(input, output, session) {
   })
 
   ## MANIFEST VALIDATOR #######
-  w <- Waiter$new(
+  v_waiter <- Waiter$new(
     id = "shiny-tab-validator",
     html = tagList(
       spin_loaders(15),
@@ -133,7 +157,7 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$validate_btn, {
-    w$show()
+    v_waiter$show()
 
     tryCatch({
       results <- list(
@@ -167,7 +191,7 @@ server <- function(input, output, session) {
       updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
       callModule(results_boxes_server, "validation_results", results)
       Sys.sleep(3)
-      next_step_upload(results)
+      next_step_modal(results, input$type)
     }, error = function(err) {
       showModal(
         modalDialog(
@@ -180,8 +204,53 @@ server <- function(input, output, session) {
       )
       updateTabsetPanel(session, "validator_tabs", selected = "terms_tab")
     })
+    v_waiter$hide()
+  })
 
-    w$hide()
+  ## UPLOAD MANIFEST #######
+  u_waiter <- Waiter$new(
+    id = "next_step",
+    html = div(style = "color:#465362",
+      spin_loaders(15, color = "#465362"),
+      h4("Uploading...")
+    ),  
+    color = "white"
+  )
+  observeEvent(input$upload_btn, {
+    u_waiter$show()
+    Sys.sleep(2)
+
+    if (input$type == "tool") {
+      ### create new entity in parent folder
+      apply(manifest, 1, function(row) {
+        name <- row[[ id[[input$type]] ]]
+
+        ### create dummy file to upload to Synapse
+        write(name, file = name)
+        new_file <- synapseclient$File(
+          path = name,
+          name = name,
+          parent = parent_folder[[input$type]],
+          annotations = list(
+            displayName = name,
+            grantId = grants[grants$grantNumber == row[["grantNumber"]], ]$grantId, #nolint
+            toolType = row[["toolType"]]
+          )
+        )
+        new_file <- syn$store(new_file)
+
+        ### remove dummy file
+        file.remove(name)
+        new_file$id
+      })
+    }
+
+    u_waiter$update(
+      html = div(style = "color:#465362",
+        span(style = "color:green", icon("check-circle", "fa-2x")),
+        strong("Upload complete!")
+      )
+    )
   })
 }
 
