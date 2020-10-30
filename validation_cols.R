@@ -21,8 +21,8 @@ template <- list(
   ),  
 
   "tool" = c(
-    "toolName", "description", "toolType", "softwareLanguage", "inputDataType",
-    "outputDataType", "grantNumber", "publicationTitle", "homepageUrl"
+    "tool", "description", "toolType", "softwareLanguage", "inputDataType",
+    "outputDataType", "grantNumber", "publicationTitle", "externalLink"
   )
 )
 
@@ -30,8 +30,7 @@ template <- list(
 id <- list(
   "publication" = "pubMedId",
   "dataset" = "datasetId",
-  "file" = "",
-  "tool" = "toolName"
+  "tool" = "tool"
 )
 
 # columns that require annotations (no NAs or empty strings)

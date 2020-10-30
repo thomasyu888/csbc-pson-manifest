@@ -1,10 +1,5 @@
 synapseclient <- reticulate::import('synapseclient')
 
-source_python("synapse_funcs.py")
-source("validation_funcs.R")
-source("col_values.R")
-source("synapse_ids.R")
-
 # get count from current tables
 count <- function(syn_id) {
   query <- sprintf("SELECT COUNT(*) AS n FROM %s", syn_id)
@@ -42,8 +37,9 @@ next_step_modal <- function(results, type) {
 
 server <- function(input, output, session) {
 
-  ### grant information for annotations later
+  ### grant and publication information for annotations later
   grants <- tibble()
+  publications <- tibble()
 
   ## SYNAPSE LOGIN ############
   session$sendCustomMessage(type = "read_cookie", message = list())
@@ -53,17 +49,22 @@ server <- function(input, output, session) {
 
       ### display overview stats
       grants <<- syn_table_query(sprintf(
-        "SELECT grantId, grantName, grantNumber FROM %s", "syn21918972")
-        )$asDataFrame()
+        "SELECT grantId, grantName, grantNumber, themeId, theme, grantInstitution, consortiumId, consortium FROM %s", #nolint
+        portal_table[["grant"]])
+      )$asDataFrame()
       output$num_grants <- renderValueBox({
         valueBox(
           nrow(grants), "Grants",
           icon = icon("award"), color = "yellow"
         )
       })
+      publications <<- syn_table_query(sprintf(
+        "SELECT publicationId, publicationTitle FROM %s", 
+        portal_table[["publication"]])
+      )$asDataFrame()
       output$num_pubs <- renderValueBox({
         valueBox(
-          formatC(count("syn21868591"), format = "d", big.mark = ","),
+          formatC(nrow(publications), format = "d", big.mark = ","),
           "Publications",
           icon = icon("book-open"), color = "maroon"
         )
@@ -133,7 +134,11 @@ server <- function(input, output, session) {
     valid_upload <<- TRUE
     hide("missing_warning")
     hide("empty_warning")
-    manifest <<- readxl::read_excel(input$manifest_file$datapath)
+    manifest <<- readxl::read_excel(input$manifest_file$datapath) %>%
+      plyr::rename(
+        replace = c(fileURL = "fileUrl", datasetURL = "datasetUrl", toolName = "tool", homepageUrl = "externalLink"),
+        warn_missing = FALSE
+      )
     if (nrow(manifest) == 0) {
       valid_upload <<- FALSE
       show("empty_warning")
@@ -158,25 +163,26 @@ server <- function(input, output, session) {
 
   observeEvent(input$validate_btn, {
     v_waiter$show()
+    type <- input$type
 
     tryCatch({
       results <- list(
         missing_cols = check_col_names(
           manifest,
-          template[[input$type]],
+          template[[type]],
           success_msg = "All required columns are present",
           fail_msg = "Missing columns in the manifest"
         ),
         invalid_cols = check_annotation_keys(
           manifest,
           std_terms,
-          whitelist_keys = setdiff(template[[input$type]], std_cols),
+          whitelist_keys = setdiff(template[[type]], std_cols),
           success_msg = "All column names are valid",
           fail_msg = "Some column names are invalid"
         ),
         incomplete_cols = check_cols_complete(
           manifest,
-          required_cols = complete_cols[[input$type]],
+          required_cols = complete_cols[[type]],
           success_msg = "All necessary columns have annotations",
           fail_msg = "Some necessary columns are missing annotations"
         ),
@@ -185,13 +191,13 @@ server <- function(input, output, session) {
           std_terms
         )
       )
-      if (input$type != "file") {
-        dup_ids = check_id_dups(manifest, id[[input$type]])
+      if (type != "file") {
+        dup_ids = check_id_dups(manifest, id[[type]])
       }
       updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
       callModule(results_boxes_server, "validation_results", results)
       Sys.sleep(3)
-      next_step_modal(results, input$type)
+      next_step_modal(results, type)
     }, error = function(err) {
       showModal(
         modalDialog(
@@ -218,32 +224,39 @@ server <- function(input, output, session) {
   )
   observeEvent(input$upload_btn, {
     u_waiter$show()
-    Sys.sleep(2)
+    type <- input$type
 
-    if (input$type == "tool") {
-      ### create new entity in parent folder
-      apply(manifest, 1, function(row) {
-        name <- row[[ id[[input$type]] ]]
-
-        ### create dummy file to upload to Synapse
-        write(name, file = name)
-        new_file <- synapseclient$File(
-          path = name,
-          name = name,
-          parent = parent_folder[[input$type]],
-          annotations = list(
-            displayName = name,
-            grantId = grants[grants$grantNumber == row[["grantNumber"]], ]$grantId, #nolint
-            toolType = row[["toolType"]]
-          )
+    apply(manifest, 1, function(row) {
+      name <- row[[ id[[type]] ]]
+      if (type == "publication") {
+        name <- paste0("pmid_", name)
+      }
+      annotations <- switch(type,
+        "publication" = publication_annots(row),
+        "dataset" = dataset_annots(row),
+        "tool" = tool_annots(row, grants)
+      )
+      if (type == "dataset") {
+        syn_id <- save_folder_to_synapse(
+          synapseclient,
+          name,
+          parent_folder[[type]],
+          annotations
         )
-        new_file <- syn$store(new_file)
-
-        ### remove dummy file
-        file.remove(name)
-        new_file$id
-      })
-    }
+      } else {
+        syn_id <- save_file_to_synapse(
+          synapseclient,
+          name,
+          parent_folder[[type]],
+          annotations
+        )
+      }
+      new_portal_row <- switch(type,
+        "publication" = publication_row(row, syn_id),
+        "dataset" = dataset_row(row, syn_id),
+        "tool" = tool_row(row, syn_id, publications, grants)
+      )
+    })
 
     u_waiter$update(
       html = div(style = "color:#465362",

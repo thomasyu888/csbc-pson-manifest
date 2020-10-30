@@ -7,6 +7,13 @@ library(tibble)
 library(waiter)
 library(dccvalidator)
 
-#' Global
+# Python
 use_condaenv("synapse", required = TRUE)
+source_python("synapse_funcs.py")
+
+# R
+source("validation_funcs.R")
+source("validation_cols.R")
+source("synapse_ids.R")
+source("utils.R")
 
