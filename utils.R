@@ -123,25 +123,25 @@ dataset_row <- function(syn_id, manifest, grants, publications) {
     assay = create_listed_annots(manifest[["assay"]]),
     species = create_listed_annots(manifest[["species"]]),
     tumorType = create_listed_annots(manifest[["tumorType"]]),
-    themeId = ,
-    theme = ,
-    consortiumId = ,
-    consortium = ,
-    grantId = create_listed_annots(),
-    grantName = create_listed_annots(),
+#    themeId = ,
+#    theme = ,
+#    consortiumId = ,
+#    consortium = ,
+#    grantId = create_listed_annots(),
+#    grantName = create_listed_annots(),
     grantNumber = manifest[["grantNumber"]],
-    publicationId = ,
-    publicationTitle = ,
-    publication = ,
-    externalLink =
+#    publicationId = ,
+#    publicationTitle = ,
+#    publication = ,
+#    externalLink =
   )
 }
 tool_row <- function(syn_id, manifest, grants, publications) {
   tibble(
     toolId = syn_id,
-    toolName = manifest[["toolName"]],
+    toolName = manifest[["tool"]],
     description = manifest[["description"]],
-    homepageUrl = manifest[["homepageUrl"]],
+    homepageUrl = manifest[["externalLink"]],
     toolType = manifest[["toolType"]],
     softwareLanguage = create_listed_annots(manifest[["softwareLanguage"]]),
     inputDataType = create_listed_annots(manifest[["inputDataType"]]),

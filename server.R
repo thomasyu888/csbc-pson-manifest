@@ -1,9 +1,64 @@
 synapseclient <- reticulate::import('synapseclient')
 
-# get count from current tables
-count <- function(syn_id) {
-  query <- sprintf("SELECT COUNT(*) AS n FROM %s", syn_id)
-  return(syn_table_query(query)$asDataFrame()$n)
+# Get selected coloumns from a Synapse table.
+get_portal_table <- function(table_id, cols) {
+  query <- sprintf("SELECT %s FROM %s", paste0(cols, collapse=","), table_id)
+  return(syn_table_query(query)$asDataFrame())
+}
+
+# Get Synapse tables used for the portal.
+get_tables <- function() {
+  grants <- get_portal_table(
+    portal_table[["grant"]],
+    c("grantId", "grantName", "grantNumber", "grantInstitution",
+      "themeId", "theme", "consortiumId", "consortium")
+  )   
+  publications <- get_portal_table(
+    portal_table[["publication"]],
+    c("publicationId", "pubMedId", "publicationTitle")
+  )   
+  datasets <- get_portal_table(
+    portal_table[["dataset"]],
+    c("datasetId", "datasetName")
+  )   
+  tools <- get_portal_table(
+    portal_table[["tool"]],
+    c("toolId", "toolName")
+  ) 
+  list(
+    "grants" = grants,
+    "publications" = publications,
+    "datasets" = datasets,
+    "tools" = tools
+  )
+}
+
+display_overview_stats <- function(output, tables) {
+  output$num_grants <- renderValueBox({
+    valueBox(
+      nrow(tables$grants), "Grants",
+      icon = icon("award"), color = "yellow"
+    )
+  })
+  output$num_pubs <- renderValueBox({
+    valueBox(
+      formatC(nrow(tables$publications), format = "d", big.mark = ","),
+      "Publications",
+      icon = icon("book-open"), color = "maroon"
+    )
+  })
+  output$num_datasets <- renderValueBox({
+    valueBox(
+      nrow(tables$datasets), "Datasets",
+      icon = icon("cubes"), color = "olive"
+    )
+  })
+  output$num_tools <- renderValueBox({
+    valueBox(
+      nrow(tables$tools), "Tools",
+      icon = icon("tools"), color = "light-blue"
+    )
+  })
 }
 
 # modal with next step (based on dccvalidator's next_step_modal)
@@ -37,9 +92,8 @@ next_step_modal <- function(results, type) {
 
 server <- function(input, output, session) {
 
-  ### grant and publication information for annotations later
-  grants <- tibble()
-  publications <- tibble()
+  ### portal table information for annotations later
+  tables <- list()
 
   ## SYNAPSE LOGIN ############
   session$sendCustomMessage(type = "read_cookie", message = list())
@@ -47,40 +101,9 @@ server <- function(input, output, session) {
     tryCatch({
       syn_login(sessionToken = input$cookie, rememberMe = FALSE)
 
-      ### display overview stats
-      grants <<- syn_table_query(sprintf(
-        "SELECT grantId, grantName, grantNumber, themeId, theme, grantInstitution, consortiumId, consortium FROM %s", #nolint
-        portal_table[["grant"]])
-      )$asDataFrame()
-      output$num_grants <- renderValueBox({
-        valueBox(
-          nrow(grants), "Grants",
-          icon = icon("award"), color = "yellow"
-        )
-      })
-      publications <<- syn_table_query(sprintf(
-        "SELECT publicationId, publicationTitle FROM %s", 
-        portal_table[["publication"]])
-      )$asDataFrame()
-      output$num_pubs <- renderValueBox({
-        valueBox(
-          formatC(nrow(publications), format = "d", big.mark = ","),
-          "Publications",
-          icon = icon("book-open"), color = "maroon"
-        )
-      })
-      output$num_datasets <- renderValueBox({
-        valueBox(
-          count("syn21897968"), "Datasets",
-          icon = icon("cubes"), color = "olive"
-        )
-      })
-      output$num_tools <- renderValueBox({
-        valueBox(
-         count("syn21930566"), "Tools",
-          icon = icon("tools"), color = "light-blue"
-        )
-      })
+      ### get portal tables and display overview stats
+      tables <<- get_tables()
+      display_overview_stats(output, tables)
 
       ### update waiter loading screen once login successful
       waiter_update(
@@ -196,7 +219,6 @@ server <- function(input, output, session) {
       }
       updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
       callModule(results_boxes_server, "validation_results", results)
-      Sys.sleep(3)
       next_step_modal(results, type)
     }, error = function(err) {
       showModal(
@@ -234,7 +256,7 @@ server <- function(input, output, session) {
       annotations <- switch(type,
         "publication" = publication_annots(row),
         "dataset" = dataset_annots(row),
-        "tool" = tool_annots(row, grants)
+        "tool" = tool_annots(row, tables$grant)
       )
       if (type == "dataset") {
         syn_id <- save_folder_to_synapse(
@@ -252,10 +274,24 @@ server <- function(input, output, session) {
         )
       }
       new_portal_row <- switch(type,
-        "publication" = publication_row(row, syn_id),
-        "dataset" = dataset_row(row, syn_id),
-        "tool" = tool_row(row, syn_id, publications, grants)
+        "publication" = publication_row(
+          syn_id, row, 
+          tables$grants, 
+          tables$publications, 
+          tables$datasets
+        ),
+        "dataset" = dataset_row(syn_id, row),
+        "tool" = tool_row(
+          syn_id, row, 
+          tables$grants, 
+          tables$publications
+        )
       )
+      syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
+
+      ### update stats on overview tab
+      tables <<- get_tables()
+      display_overview_stats(output, tables)
     })
 
     u_waiter$update(
