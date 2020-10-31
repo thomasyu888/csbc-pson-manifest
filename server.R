@@ -197,17 +197,21 @@ server <- function(input, output, session) {
   observeEvent(input$new_std_terms, {
     tryCatch({
       new_terms <- readxl::read_excel(input$new_std_terms$datapath)
-      new_terms <- new_terms[, names(new_terms) %in% c("Category", "standard_name", "key", "value")] %>% #nolint
-        plyr::rename(
-          replace = c(Category = "key", standard_name = "value"), 
-          warn_missing = FALSE
-        ) %>%
-        mutate(key = stringr::str_replace(key, "outDataType", "outputDataType")) %>%
-        add_column(columnType = "STRING")
-      std_terms <<- unique(bind_rows(std_terms, new_terms))
-      output$terms <- DT::renderDT(
-        std_terms,
-        options = list(pageLength = 50))
+      if (nrow(new_terms) > 0) {
+        new_terms <- new_terms[, names(new_terms) %in% c("Category", "standard_name", "key", "value")] %>% #nolint
+          plyr::rename(
+            replace = c(Category = "key", standard_name = "value"), 
+            warn_missing = FALSE
+          ) %>%
+          mutate(
+            key = stringr::str_replace(key, "outDataType", "outputDataType")
+          ) %>%
+          add_column(columnType = "STRING")
+        std_terms <<- unique(bind_rows(std_terms, new_terms))
+        output$terms <- DT::renderDT(
+          std_terms,
+          options = list(pageLength = 50))
+      }
     }, error = function(err) {
       showModal(
         modalDialog(
