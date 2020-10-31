@@ -28,10 +28,17 @@ create_url_markdown <- function(link_text, url, param = "") {
 split_and_search <- function(annots, table, search_col, output_col) {
   res <- lapply(stringr::str_split(annots, ", ")[[1]], function(annot) {
     if (annot %in% table[[search_col]]) {
-        table[table[[search_col]] == annot, ][[output_col]]
+      stringr::str_split(
+        table[table[[search_col]] == annot, ][[output_col]],
+        ", "
+      )
     } 
   })
-  paste0(unique(purrr::compact(res)), collapse = ", ")
+
+  # get rid of NAs and unnecessary characters
+  res <- unlist(res[!is.na(res)])
+  res <- stringr::str_replace_all(res, c("\\[" = "", "\\\"" = "", "\\]" = ""))
+  paste0(unique(res), collapse = ", ")
 }
 
 
@@ -113,18 +120,21 @@ publication_row <- function(syn_id, manifest, grants, publications, datasets) {
     tumorType = create_listed_annots(manifest[["tumorType"]]),
     tissue = create_listed_annots(manifest[["tissue"]]),
     themeId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "themeId"), #nolint
-    theme = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "theme"),
+    theme = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "theme")), #nolint
     consortiumId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "consortiumId"), #nolint
     consortium = create_listed_annots(manifest[["consortium"]]),
     grantId = create_listed_annots(manifest[["grantId"]]),
-    grantName = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantName")),
+    grantName = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantName")), #nolint
     grantNumber = create_listed_annots(manifest[["grantNumber"]]),
-    grantInstitution = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantInstitution"), #nolint
+    grantInstitution = create_listed_annots(split_and_search(
+      manifest[["grantNumber"]], grants, 
+      "grantNumber", "grantInstitution"
+    )),
     datasetId = ifelse(
       manifest[["bioProjectAccns"]] %in% datasets$datasetAlias,
-      split_and_search(manifest[["bioProjectAccns"]], datasets, "datasetAlias", "datasetId"),
-      ""  
-    ),  
+      split_and_search(manifest[["bioProjectAccns"]], datasets, "datasetAlias", "datasetId"), # nolint
+      ""
+    ),
     dataset = manifest[["dataset"]]
   )
 }
