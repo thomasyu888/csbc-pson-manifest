@@ -19,7 +19,7 @@ get_tables <- function() {
   )   
   datasets <- get_portal_table(
     portal_table[["dataset"]],
-    c("datasetId", "datasetName")
+    c("datasetId", "datasetName", "datasetAlias")
   )   
   tools <- get_portal_table(
     portal_table[["tool"]],
@@ -204,7 +204,9 @@ server <- function(input, output, session) {
             warn_missing = FALSE
           ) %>%
           mutate(
-            key = stringr::str_replace(key, "outDataType", "outputDataType")
+            key = stringr::str_replace_all(
+              key, 
+              c("outDataType" = "outputDataType", "Assay" = "assay", "Tumor Type" = "tumorType"))
           ) %>%
           add_column(columnType = "STRING")
         std_terms <<- unique(bind_rows(std_terms, new_terms))
@@ -310,7 +312,11 @@ server <- function(input, output, session) {
           tables$publications, 
           tables$datasets
         ),
-        "dataset" = dataset_row(syn_id, row),
+        "dataset" = dataset_row(
+          syn_id, row,
+          tables$grants,
+          tables$publications
+        ),
         "tool" = tool_row(
           syn_id, row, 
           tables$grants, 
