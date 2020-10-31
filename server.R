@@ -161,16 +161,26 @@ server <- function(input, output, session) {
       plyr::rename(
         replace = c(fileURL = "fileUrl", datasetURL = "datasetUrl", toolName = "tool", homepageUrl = "externalLink"),
         warn_missing = FALSE
-      )
+      ) 
+
+    ### Rancho provides some cols we don't need, so remove them
+    manifest <<- manifest[, !(names(manifest) %in% c("Rancho comments", "tumorType_"))]
     if (nrow(manifest) == 0) {
       valid_upload <<- FALSE
       show("empty_warning")
     }
     tryCatch({
-      std_terms <<- readxl::read_excel(
+      terms <- readxl::read_excel(
         input$manifest_file$datapath, 
         sheet = "standard_terms"
       )
+
+      ### dccvalidator requires annotations to have a `columnType` column,
+      ### so add it if not provided in `standard_terms`
+      if (!"columnType" %in% names(std_terms)) {
+        terms$columnType <- "STRING"
+      }
+      std_terms <<- unique(bind_rows(std_terms, terms))
       output$preview <- DT::renderDT(manifest)
       output$terms <- DT::renderDT(
         std_terms,
@@ -184,54 +194,70 @@ server <- function(input, output, session) {
     updateTabsetPanel(session, "validator_tabs", selected = "preview_tab")
   })
 
-  observeEvent(input$validate_btn, {
-    v_waiter$show()
-    type <- input$type
-
+  observeEvent(input$new_std_terms, {
     tryCatch({
-      results <- list(
-        missing_cols = check_col_names(
-          manifest,
-          template[[type]],
-          success_msg = "All required columns are present",
-          fail_msg = "Missing columns in the manifest"
-        ),
-        invalid_cols = check_annotation_keys(
-          manifest,
-          std_terms,
-          whitelist_keys = setdiff(template[[type]], std_cols),
-          success_msg = "All column names are valid",
-          fail_msg = "Some column names are invalid"
-        ),
-        incomplete_cols = check_cols_complete(
-          manifest,
-          required_cols = complete_cols[[type]],
-          success_msg = "All necessary columns have annotations",
-          fail_msg = "Some necessary columns are missing annotations"
-        ),
-        invalid_vals = check_listed_values(
-          manifest,
-          std_terms
-        )
-      )
-      if (type != "file") {
-        dup_ids = check_id_dups(manifest, id[[type]])
-      }
-      updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
-      callModule(results_boxes_server, "validation_results", results)
-      next_step_modal(results, type)
+      new_terms <- readxl::read_excel(input$new_std_terms$datapath)
+      new_terms <- new_terms[, names(new_terms) %in% c("Category", "standard_name", "key", "value")] %>% #nolint
+        plyr::rename(
+          replace = c(Category = "key", standard_name = "value"), 
+          warn_missing = FALSE
+        ) %>%
+        mutate(key = stringr::str_replace(key, "outDataType", "outputDataType")) %>%
+        add_column(columnType = "STRING")
+      std_terms <<- unique(bind_rows(std_terms, new_terms))
+      output$terms <- DT::renderDT(
+        std_terms,
+        options = list(pageLength = 50))
     }, error = function(err) {
       showModal(
         modalDialog(
           title = "Uh oh, something went wrong!",
-          HTML(
-            "`standard_terms` must have the following columns: 'key', 'value',
-            and 'columnType'. See templates for an example."),
+          span(
+            "File of additional standard terms is not correctly formatted.
+            There should be a column named `Category` or `key` and another
+            column named `standard_name` or `value`.", br(), br(), "See", 
+            strong("Instructions"), "for a template file."),
           easyClose = TRUE
         )
       )
-      updateTabsetPanel(session, "validator_tabs", selected = "terms_tab")
     })
+  })
+
+  observeEvent(input$validate_btn, {
+    v_waiter$show()
+    type <- input$type
+
+    results <- list(
+      missing_cols = check_col_names(
+        manifest,
+        template[[type]],
+        success_msg = "All required columns are present",
+        fail_msg = "Missing columns in the manifest"
+      ),
+      invalid_cols = check_annotation_keys(
+        manifest,
+        std_terms,
+        whitelist_keys = setdiff(template[[type]], std_cols),
+        success_msg = "All column names are valid",
+        fail_msg = "Some column names are invalid"
+      ),
+      incomplete_cols = check_cols_complete(
+        manifest,
+        required_cols = complete_cols[[type]],
+        success_msg = "All necessary columns have annotations",
+        fail_msg = "Some necessary columns are missing annotations"
+      ),
+      invalid_vals = check_listed_values(
+        manifest,
+        std_terms
+      )
+    )
+    if (type != "file") {
+      results$dup_ids = check_id_dups(manifest, id[[type]])
+    }
+    updateTabsetPanel(session, "validator_tabs", selected = "results_tab")
+    callModule(results_boxes_server, "validation_results", results)
+    next_step_modal(results, type)
     v_waiter$hide()
   })
 

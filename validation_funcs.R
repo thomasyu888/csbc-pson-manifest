@@ -17,7 +17,7 @@ check_id_dups <- function(data, id_col) {
   duplicates <- unique(ids[which(duplicated(ids))])
   if (length(duplicates) > 0) {
     check_fail(
-      msg = sprintf("Duplicate %s IDs found", id_col),,
+      msg = sprintf("Duplicate %s IDs found", id_col),
       behavior = behavior,
       data = duplicates
     )

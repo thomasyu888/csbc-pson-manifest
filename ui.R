@@ -59,10 +59,10 @@ body <- dashboardBody(
             width = "100%", collapsible = TRUE, collapsed = TRUE,
             p("In order to add new metadata to the portal, the values must
                first be validated. Select the type of manifest to be uploaded,
-               hen upload the file. A file preview will be displayed on the
+               then upload the file. A file preview will be displayed on the
                right. Click on ", strong("Validate."), "If all checks pass,
                feel free to upload; otherwise, edit accordingly then re-upload
-               the manifest."),
+               the manifest to validate again."),
             p(strong("Note:"), "the file must be .xlsx and it is expected to
               have a sheet called standard_terms (list of the acceptable 
               values). If needed, templates are available below:"),
@@ -74,10 +74,12 @@ body <- dashboardBody(
               tags$li(a(href = "templates/files_manifest.xlsx", "Files",
                 download = NA, target = "_blank")),
               tags$li(a(href = "templates/tools_manifest.xlsx", "Tools",
-                download = NA, target = "_blank"))
+                download = NA, target = "_blank")),
+              tags$li(a(href = "templates/additional_standard_terms.xlsx",
+                "Additional Terms", download = NA, target = "_blank"))
             ),
             span(style = "font-size:smaller",
-              em("Templates last updated 10/20/2020."))
+              em("Templates last updated 10/30/2020."))
           ),
 
           selectizeInput(
@@ -96,6 +98,15 @@ body <- dashboardBody(
             "manifest_file",
             label = "Upload manifest (.xlsx)",
             accept = c(
+              ".xlsx",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #nolint
+            )
+          ),
+
+          fileInput(
+            "new_std_terms",
+            label = "Additional Standard Terms (.xlsx)",
+            accept= c(
               ".xlsx",
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #nolint
             )
