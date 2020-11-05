@@ -104,7 +104,7 @@ tool_annots <- function(manifest, grants) {
 }
 
 ## Create tibble for entry into * - Merged tables.
-publication_row <- function(syn_id, manifest, grants, publications, datasets) {
+publication_row <- function(syn_id, manifest, grants, datasets) {
   tibble(
     publicationId = syn_id,
     doi = manifest[["doi"]],

@@ -14,7 +14,6 @@ sidebar <- dashboardSidebar(
       icon = icon("cloud-upload-alt")
     )
   ),
-  uiOutput("diag"),
   HTML("<footer>
             Made with ♥ and dccvalidator functions<br/>
             Powered by Sage Bionetworks

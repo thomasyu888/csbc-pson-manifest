@@ -158,8 +158,13 @@ server <- function(input, output, session) {
     hide("missing_warning")
     hide("empty_warning")
     manifest <<- readxl::read_excel(input$manifest_file$datapath) %>%
+      mutate_all(~ tidyr::replace_na(.x, "")) %>%
       plyr::rename(
-        replace = c(fileURL = "fileUrl", datasetURL = "datasetUrl", toolName = "tool", homepageUrl = "externalLink"),
+        replace = c(
+          fileURL = "fileUrl", datasetURL = "datasetUrl", 
+          toolName = "tool", homepageUrl = "externalLink", 
+          dpgapAccns = "dbgapAccns", dpgapUrls = "dbgapUrls"
+        ),
         warn_missing = FALSE
       ) 
 
@@ -206,7 +211,7 @@ server <- function(input, output, session) {
           mutate(
             key = stringr::str_replace_all(
               key, 
-              c("outDataType" = "outputDataType", "Assay" = "assay", "Tumor Type" = "tumorType"))
+              c("outDataType" = "outputDataType", "Assay" = "assay", "Tumor Type" = "tumorType")) #nolint
           ) %>%
           add_column(columnType = "STRING")
         std_terms <<- unique(bind_rows(std_terms, new_terms))
@@ -309,7 +314,6 @@ server <- function(input, output, session) {
         "publication" = publication_row(
           syn_id, row, 
           tables$grants, 
-          tables$publications, 
           tables$datasets
         ),
         "dataset" = dataset_row(

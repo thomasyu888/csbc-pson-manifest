@@ -56,7 +56,7 @@ check_listed_value <- function(values, key, annotations) {
     trimws
   )[[1]]
 
-  unique(values[!values %in% annot_values & !is.na(values)])
+  unique(values[!values %in% c(annot_values, "") & !is.na(values)])
 }
 
 # annotation validation (including those put into a list)
