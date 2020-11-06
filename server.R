@@ -26,22 +26,21 @@ get_tables <- function() {
   tools <- get_portal_table(
     portal_table[["tool"]],
     c("toolId", "toolName")
-  ) 
+  )
+  files <- get_portal_table(
+    fileview,
+    c("fileName", "datasets", "parentId")
+  )
   list(
     "grants" = grants,
     "publications" = publications,
     "datasets" = datasets,
+    "files" = files,
     "tools" = tools
   )
 }
 
 display_overview_stats <- function(output, tables) {
-  output$num_grants <- renderValueBox({
-    valueBox(
-      nrow(tables$grants), "Grants",
-      icon = icon("award"), color = "yellow"
-    )
-  })
   output$num_pubs <- renderValueBox({
     valueBox(
       formatC(nrow(tables$publications), format = "d", big.mark = ","),
@@ -55,12 +54,37 @@ display_overview_stats <- function(output, tables) {
       icon = icon("cubes"), color = "olive"
     )
   })
+  output$num_files <- renderValueBox({
+    valueBox(
+      formatC(nrow(tables$files), format = "d", big.mark = ","),
+      "Data files",
+      icon = icon("file"), color = "yellow"
+    )
+  })
   output$num_tools <- renderValueBox({
     valueBox(
       nrow(tables$tools), "Tools",
       icon = icon("tools"), color = "light-blue"
     )
   })
+}
+
+display_quickview <- function(output, tables) {
+  output$grants_table <- DT::renderDT(
+    tail(tables$grants, 10),
+    options = list(dom = 't'))
+  output$pubs_table <- DT::renderDT(
+    tail(tables$publications, 10),
+    options = list(dom = 't'))
+  output$datasets_table <- DT::renderDT(
+    tail(tables$datasets, 10),
+    options = list(dom = 't'))
+  output$files_table <- DT::renderDT(
+    tail(tables$files, 10),
+    options = list(dom = 't'))
+  output$tools_table <- DT::renderDT(
+    tail(tables$tools, 10),
+    options = list(dom = 't'))
 }
 
 # modal with next step (based on dccvalidator's next_step_modal)
@@ -106,6 +130,7 @@ server <- function(input, output, session) {
       ### get portal tables and display overview stats
       tables <<- get_tables()
       display_overview_stats(output, tables)
+      display_quickview(output, tables)
 
       ### update waiter loading screen once login successful
       waiter_update(
@@ -312,6 +337,7 @@ server <- function(input, output, session) {
           annotations
         )
       }
+#      syn_id <- "syn123"
       new_portal_row <- switch(type,
         "publication" = publication_row(
           syn_id, row, 
@@ -327,11 +353,13 @@ server <- function(input, output, session) {
           tables$publications
         )
       )
+#      output$diag <- DT::renderDT(new_portal_row)
       syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
 
       ### update stats on overview tab
       tables <<- get_tables()
       display_overview_stats(output, tables)
+      display_quickview(output, tables)
     })
 
     u_waiter$update(

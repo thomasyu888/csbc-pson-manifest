@@ -48,7 +48,7 @@ check_listed_value <- function(values, key, annotations) {
   # comma as the delimiter, except tumorType and tisse (because some
   # terms may use commas).
   delim = ","
-  if (key %in% c("tumorType", "tissue")) {
+  if (key == "tissue") {
     delim = ";"
   }
   values <- lapply(

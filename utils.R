@@ -25,19 +25,20 @@ create_url_markdown <- function(link_text, url, param = "") {
 
 
 ## Split annots and search for match in table
-split_and_search <- function(annots, table, search_col, output_col) {
+split_and_search <- function(annots, table, search_col, output_col,
+                             remove_chars = TRUE) {
   res <- lapply(stringr::str_split(annots, ", ")[[1]], function(annot) {
-    if (annot %in% table[[search_col]]) {
-      stringr::str_split(
-        table[grepl(annot, table[[search_col]], ignore.case = TRUE), ][[output_col]], #nolint
-        ", "
-      )
-    } 
+    stringr::str_split(
+      table[grepl(paste0("^", annot, "$"), table[[search_col]], ignore.case = TRUE), ][[output_col]], #nolint
+      ", "
+    )
   })
 
   # get rid of NAs and unnecessary characters
   res <- unlist(res[!is.na(res)])
-  res <- stringr::str_replace_all(res, c("\\[" = "", "\\\"" = "", "\\]" = ""))
+  if (isTRUE(remove_chars)) {
+    res <- stringr::str_replace_all(res, c("\\[" = "", "\\\"" = "", "\\]" = ""))
+  }
   paste0(unique(res), collapse = ", ")
 }
 
@@ -118,7 +119,7 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
     authors = manifest[["authors"]],
     assay = create_listed_annots(manifest[["assay"]]),
     tumorType = create_listed_annots(manifest[["tumorType"]]),
-    tissue = create_listed_annots(manifest[["tissue"]]),
+    tissue = create_listed_annots(manifest[["tissue"]], delim =";"),
     themeId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "themeId"), #nolint
     theme = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "theme")), #nolint
     consortiumId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "consortiumId"), #nolint
@@ -161,28 +162,24 @@ dataset_row <- function(syn_id, manifest, publications) {
     ),
     publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
-    publication = ifelse(
-      manifest[["publicationTitle"]] %in% publications$publicationTitle,
-      create_listed_annots(create_url_markdown(
-        manifest[["publicationTitle"]],
-        "https://www.ncbi.nlm.nih.gov/pubmed/?term=",
-        publications[publications$publicationTitle == manifest[["publicationTitle"]], ]$pubMedId #nolint
-      )),
-      "[]"
-    ),
-    externalLink = create_url_markdown(
-      paste0(
-        if (startsWith(manifest[["datasetId"]], "GSE")) {
-          "GEO:"
-        } else if (startsWith(manifest[["datasetId"]], "SRP")) {
-          "SRA:"
-        } else {
-          ""
-        },
-        manifest[["datasetId"]]
+    publication = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "pubMedLink", remove_chars = FALSE)), #nolint
+    externalLink = ifelse(
+      manifest[["externalLink"]] == "",
+      create_url_markdown(
+        paste0(
+          if (startsWith(manifest[["datasetId"]], "GSE")) {
+            "GEO:"
+          } else if (startsWith(manifest[["datasetId"]], "SRP")) {
+            "SRA:"
+          } else {
+            ""
+          },
+          manifest[["datasetId"]]
+        ),
+        manifest[["datasetUrl"]]
       ),
-      manifest[["datasetUrl"]]
-    )
+      manifest[["externalLink"]]
+    )    
   )
 }
 tool_row <- function(syn_id, manifest, publications) {
@@ -204,15 +201,7 @@ tool_row <- function(syn_id, manifest, publications) {
     grantNumber = create_listed_annots(manifest[["grantNumber"]]),
     publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
-    publication = ifelse(
-      manifest[["publicationTitle"]] %in% publications$publicationTitle, 
-      create_url_markdown(
-        manifest[["publicationTitle"]], 
-        "https://www.ncbi.nlm.nih.gov/pubmed/?term=", 
-        publications[publications$publicationTitle == manifest[["publicationTitle"]], ]$pubMedId #nolint
-      ),
-      "[]"
-    )
+    publication = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "pubMedLink", remove_chars = FALSE)), #nolint
   )
 }
 

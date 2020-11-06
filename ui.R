@@ -12,6 +12,9 @@ sidebar <- dashboardSidebar(
     menuItem("Overview", tabName = "home", icon = icon("dashboard")),
     menuItem("Validate and Upload", tabName = "validator", 
       icon = icon("cloud-upload-alt")
+    ),
+    menuItem("Portal Quickview", tabName = "quickview",
+      icon = icon("desktop")
     )
   ),
   HTML("<footer>
@@ -40,9 +43,10 @@ body <- dashboardBody(
       h4(strong("Overview")),
       p("So far, we have annotated..."),
       fluidRow(
-        valueBoxOutput("num_grants", width = 3),
+        #valueBoxOutput("num_grants", width = 3),
         valueBoxOutput("num_pubs", width = 3),
         valueBoxOutput("num_datasets", width = 3),
+        valueBoxOutput("num_files", width = 3),
         valueBoxOutput("num_tools", width = 3)
       ),
       p("Let's annotate even more! Go to ", strong("Validate and Upload"),
@@ -78,12 +82,12 @@ body <- dashboardBody(
                 "Additional Terms", download = NA, target = "_blank"))
             ),
             span(style = "font-size:smaller",
-              em("Templates last updated 10/30/2020."))
+              em("Templates last updated 11/05/2020."))
           ),
 
           span(style = "font-size:smaller",
-            strong("Note:"),
-            "when uploading multiple manifests, upload the publications one first."
+            strong("Important!"), br(),
+            "When uploading multiple manifests, upload the publications one first."
           ), br(), br(),
 
           selectizeInput(
@@ -148,7 +152,8 @@ body <- dashboardBody(
               "File Preview",
               value = "preview_tab",
               style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
-              DT::DTOutput("preview")
+              DT::DTOutput("preview"),
+              DT::DTOutput("diag")
             ),
             tabPanel(
               "Standard Terms",
@@ -165,6 +170,45 @@ body <- dashboardBody(
               results_boxes_ui("validation_results")
             )
           )
+        )
+      )
+    ),
+
+    tabItem(
+      tabName = "quickview",
+      p("This will display select columns of the last 10 rows of each portal
+         table. For a more in-depth look, go ", 
+         a(href = "https://www.synapse.org/#!Synapse:syn7080714/tables/",
+           target = "_blank",
+           "here"),
+         "."),
+      tabBox(
+        id = "quickview_tabs",
+        width = "100%",
+        tabPanel(
+          "Grants",
+          style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+          DT::DTOutput("grants_table")
+        ),
+        tabPanel(
+          "Publications",
+          style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+          DT::DTOutput("pubs_table")
+        ),
+        tabPanel(
+          "Datasets",
+          style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+          DT::DTOutput("datasets_table")
+        ),
+        tabPanel(
+          "Files",
+          style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+          DT::DTOutput("files_table")
+        ),
+        tabPanel(
+          "Tools",
+          style = "height:78vh; overflow-y:scroll; overflow-x:scroll;",
+          DT::DTOutput("tools_table")
         )
       )
     )
