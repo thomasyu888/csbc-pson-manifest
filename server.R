@@ -15,7 +15,9 @@ get_tables <- function() {
   )   
   publications <- get_portal_table(
     portal_table[["publication"]],
-    c("publicationId", "pubMedId", "publicationTitle")
+    c("publicationId", "publicationTitle", "grantId", "grantNumber",
+      "grantName", "themeId", "theme", "consortiumId", "consortium"
+    )
   )   
   datasets <- get_portal_table(
     portal_table[["dataset"]],
@@ -318,12 +320,10 @@ server <- function(input, output, session) {
         ),
         "dataset" = dataset_row(
           syn_id, row,
-          tables$grants,
           tables$publications
         ),
         "tool" = tool_row(
           syn_id, row, 
-          tables$grants, 
           tables$publications
         )
       )

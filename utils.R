@@ -29,7 +29,7 @@ split_and_search <- function(annots, table, search_col, output_col) {
   res <- lapply(stringr::str_split(annots, ", ")[[1]], function(annot) {
     if (annot %in% table[[search_col]]) {
       stringr::str_split(
-        table[table[[search_col]] == annot, ][[output_col]],
+        table[grepl(annot, table[[search_col]], ignore.case = TRUE), ][[output_col]], #nolint
         ", "
       )
     } 
@@ -111,7 +111,7 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
     journal = manifest[["journal"]],
     pubMedId = manifest[["pubMedId"]],
     pubMedUrl = manifest[["pubMedUrl"]],
-    pubMedLink = create_url_markdown(paste0("PMID:", manifest[["pubMedId"]]), manifest[["pubMedUrl"]]),
+    pubMedLink = create_url_markdown(paste0("PMID:", manifest[["pubMedId"]]), manifest[["pubMedUrl"]]), #nonlint
     publicationTitle = manifest[["publicationTitle"]],
     publicationYear = manifest[["publicationYear"]],
     keywords = manifest[["keywords"]],
@@ -138,7 +138,7 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
     dataset = manifest[["dataset"]]
   )
 }
-dataset_row <- function(syn_id, manifest, grants, publications) {
+dataset_row <- function(syn_id, manifest, publications) {
   tibble(
     datasetId = syn_id,
     datasetName = manifest[["datasetName"]],
@@ -148,22 +148,18 @@ dataset_row <- function(syn_id, manifest, grants, publications) {
     assay = create_listed_annots(manifest[["assay"]]),
     species = create_listed_annots(manifest[["species"]]),
     tumorType = create_listed_annots(manifest[["tumorType"]]),
-    themeId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "themeId"), #nolint
-    theme = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "theme"), #nolint
-    consortiumId = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "consortiumId"), #nolint
-    consortium = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "consortium"), #nolint
-    grantId = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantId")),
-    grantName = create_listed_annots(split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantName")),
+    themeId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "themeId"), #nolint
+    theme = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "theme")), #nolint
+    consortiumId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortiumId"), #nolint
+    consortium = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortium")), #nolint
+    grantId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantId")), #nolint
+    grantName = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantName")), #nolint
     grantNumber = ifelse(
-        is.na(manifest[["grantNumber"]]),
-        "[]",
+        manifest[["grantNumber"]] == "",
+        create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantNumber")), #nolint
         create_listed_annots(manifest[["grantNumber"]])
     ),
-    publicationId = ifelse(
-      manifest[["publicationTitle"]] %in% publications$publicationTitle,
-      create_listed_annots(publications[publications$publicationTitle == manifest[["publicationTitle"]], ]$publicationId), #nolint 
-      "[]"
-    ),
+    publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
     publication = ifelse(
       manifest[["publicationTitle"]] %in% publications$publicationTitle,
@@ -189,7 +185,7 @@ dataset_row <- function(syn_id, manifest, grants, publications) {
     )
   )
 }
-tool_row <- function(syn_id, manifest, grants, publications) {
+tool_row <- function(syn_id, manifest, publications) {
   tibble(
     toolId = syn_id,
     toolName = manifest[["tool"]],
@@ -199,18 +195,14 @@ tool_row <- function(syn_id, manifest, grants, publications) {
     softwareLanguage = create_listed_annots(manifest[["softwareLanguage"]]),
     inputDataType = create_listed_annots(manifest[["inputDataType"]]),
     outputDataType = create_listed_annots(manifest[["outputDataType"]]),
-    themeId = grants[grants$grantNumber == manifest[["grantNumber"]], ]$themeId, #nolint
-    theme = grants[grants$grantNumber == manifest[["grantNumber"]], ]$theme, #nolint
-    consortiumId = grants[grants$grantNumber == manifest[["grantNumber"]], ]$consortiumId, #nolint 
-    consortium = grants[grants$grantNumber == manifest[["grantNumber"]], ]$consortium, #nolint
-    grantId = create_listed_annots(grants[grants$grantNumber == manifest[["grantNumber"]], ]$grantId), #nolint
-    grantName = create_listed_annots(grants[grants$grantNumber == manifest[["grantNumber"]], ]$grantName), #nolint
+    themeId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "themeId"), #nolint
+    theme = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "theme")), #nolint
+    consortiumId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortiumId"), #nolint
+    consortium = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortium")), #nolint
+    grantId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantId")), #nolint
+    grantName = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantName")), #nolint
     grantNumber = create_listed_annots(manifest[["grantNumber"]]),
-    publicationId = ifelse(
-      manifest[["publicationTitle"]] %in% publications$publicationTitle,
-      publications[publications$publicationTitle == manifest[["publicationTitle"]], ]$publicationId, #nolint 
-      "[]"
-    ),
+    publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
     publication = ifelse(
       manifest[["publicationTitle"]] %in% publications$publicationTitle, 

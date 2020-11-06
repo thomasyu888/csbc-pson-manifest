@@ -81,6 +81,11 @@ body <- dashboardBody(
               em("Templates last updated 10/30/2020."))
           ),
 
+          span(style = "font-size:smaller",
+            strong("Note:"),
+            "when uploading multiple manifests, upload the publications one first."
+          ), br(), br(),
+
           selectizeInput(
             "type",
             label = "Manifest type:",
