@@ -198,7 +198,7 @@ tool_row <- function(syn_id, manifest, publications) {
     themeId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "themeId"), #nolint
     theme = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "theme")), #nolint
     consortiumId = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortiumId"), #nolint
-    consortium = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortium")), #nolint
+    consortium = split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "consortium"), #nolint
     grantId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantId")), #nolint
     grantName = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantName")), #nolint
     grantNumber = create_listed_annots(manifest[["grantNumber"]]),
