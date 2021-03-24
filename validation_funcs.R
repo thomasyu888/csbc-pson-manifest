@@ -67,7 +67,7 @@ check_listed_values <- function(x, annotations,
     stop("No annotations present to check", call. = FALSE)
   }
   if (missing(annotations)) {
-    annotations <- get_synapse_annotations(syn = syn)
+    annotations <- get_synapse_annotations(synID = "syn25322361", syn = syn)
   }
   if (!all(c("key", "value", "columnType") %in% names(annotations))) {
     stop(
@@ -77,8 +77,7 @@ check_listed_values <- function(x, annotations,
   }
   values <- purrr::imap(x, check_listed_value, annotations)
   values <- purrr::compact(values)
-  behavior <- glue::glue("All annotation values should conform to the
-    vocabulary set in standard_terms")
+  behavior <- "All annotation values should conform to the vocabulary. Refer to Standard Terms for accepted values." #nolint
   if (length(values) == 0) {
     check_pass(
       msg = success,

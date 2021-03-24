@@ -28,7 +28,7 @@ get_tables <- function() {
     c("toolId", "toolName")
   )
   files <- get_portal_table(
-    fileview,
+    portal_table[["file"]],
     c("fileName", "datasets", "parentId")
   )
   list(
@@ -72,19 +72,19 @@ display_overview_stats <- function(output, tables) {
 display_quickview <- function(output, tables) {
   output$grants_table <- DT::renderDT(
     tail(tables$grants, 10),
-    options = list(dom = 't'))
+    options = list(dom = 't'), rownames = FALSE)
   output$pubs_table <- DT::renderDT(
     tail(tables$publications, 10),
-    options = list(dom = 't'))
+    options = list(dom = 't'), rownames = FALSE)
   output$datasets_table <- DT::renderDT(
     tail(tables$datasets, 10),
-    options = list(dom = 't'))
+    options = list(dom = 't'), rownames = FALSE)
   output$files_table <- DT::renderDT(
     tail(tables$files, 10),
-    options = list(dom = 't'))
+    options = list(dom = 't'), rownames = FALSE)
   output$tools_table <- DT::renderDT(
     tail(tables$tools, 10),
-    options = list(dom = 't'))
+    options = list(dom = 't'), rownames = FALSE)
 }
 
 # modal with next step (based on dccvalidator's next_step_modal)
@@ -92,17 +92,11 @@ next_step_modal <- function(results, type) {
   is_failure <- purrr::map_lgl(results, function(x) {
     inherits(x, "check_fail")
   })
-  if (type == "file") {
-    instructions = p("File manifests are manually added by our internal team.
-                     Please email the manifest file to Verena at
-                     verena.chung@sagebase.org to add the new annotations.")
-  } else {
-    instructions = tagList(
-      p("You may now upload the manifest by clicking the button below."),
-      actionButton("upload_btn", class="btn-lg btn-block",
-        icon = icon("cloud-upload-alt"), "Upload to Synapse")
-    )
-  }
+  instructions = tagList(
+    p("You may now upload the manifest by clicking the button below."),
+    actionButton("upload_btn", class="btn-lg btn-block",
+      icon = icon("cloud-upload-alt"), "Upload to Synapse")
+  )
   if (length(results) & !any(is_failure)) {
     Sys.sleep(1)
     showModal(
@@ -120,6 +114,7 @@ server <- function(input, output, session) {
 
   ### portal table information for annotations later
   tables <- list()
+  std_terms <- tibble()
 
   ## SYNAPSE LOGIN ############
   session$sendCustomMessage(type = "read_cookie", message = list())
@@ -131,6 +126,15 @@ server <- function(input, output, session) {
       tables <<- get_tables()
       display_overview_stats(output, tables)
       display_quickview(output, tables)
+
+      # get controlled-vocabulary list
+      std_terms <<- get_synapse_annotations("syn25322361", syn) %>% 
+        select(key, value, columnType) %>% 
+        unique()
+      output$terms <- DT::renderDT(
+        std_terms,
+        options = list(pageLength = 50) 
+      )
 
       ### update waiter loading screen once login successful
       waiter_update(
@@ -177,9 +181,8 @@ server <- function(input, output, session) {
     ),
     color = "#424874"
   )
-  manifest <- tibble()
-  std_terms <- tibble()
 
+  manifest <- tibble()
   observeEvent(input$manifest_file, {
     valid_upload <<- TRUE
     hide("missing_warning")
@@ -197,32 +200,15 @@ server <- function(input, output, session) {
 
     ### Rancho provides some cols we don't need, so remove them
     manifest <<- manifest[, !(names(manifest) %in% c("Rancho comments", "tumorType_"))]
+
+    ### Show warning if uploaded manifest is empty
     if (nrow(manifest) == 0) {
       valid_upload <<- FALSE
       show("empty_warning")
-    }
-    tryCatch({
-      terms <- readxl::read_excel(
-        input$manifest_file$datapath, 
-        sheet = "standard_terms"
-      )
-
-      ### dccvalidator requires annotations to have a `columnType` column,
-      ### so add it if not provided in `standard_terms`
-      if (!"columnType" %in% names(std_terms)) {
-        terms$columnType <- "STRING"
-      }
-      std_terms <<- unique(bind_rows(std_terms, terms))
+    } else {
       output$preview <- DT::renderDT(manifest)
-      output$terms <- DT::renderDT(
-        std_terms,
-        options = list(pageLength = 50))
-    }, error = function(err) {
-      valid_upload <<- FALSE
-      show("missing_warning")
-      output$preview <- DT::renderDT({})
-      output$terms <- DT::renderDT({})
-    })
+    }
+    
     updateTabsetPanel(session, "validator_tabs", selected = "preview_tab")
   })
 
@@ -275,9 +261,10 @@ server <- function(input, output, session) {
       invalid_cols = check_annotation_keys(
         manifest,
         std_terms,
-        whitelist_keys = setdiff(template[[type]], std_cols),
+        whitelist_keys = c(setdiff(template[[type]], std_cols), "Notes", "notes"),
         success_msg = "All column names are valid",
-        fail_msg = "Some column names are invalid"
+        fail_msg = "Some column names are invalid",
+        annots_link = "https://www.synapse.org/#!Synapse:syn25322361/tables/"
       ),
       incomplete_cols = check_cols_complete(
         manifest,
@@ -313,48 +300,69 @@ server <- function(input, output, session) {
     type <- input$type
 
     apply(manifest, 1, function(row) {
+
+## Skipping some steps for now; we only need to create entities for files
       name <- row[[ id[[type]] ]]
-      if (type == "publication") {
-        name <- paste0("pmid_", name)
-      }
-      annotations <- switch(type,
-        "publication" = publication_annots(row),
-        "dataset" = dataset_annots(row),
-        "tool" = tool_annots(row, tables$grant)
-      )
+#      if (type == "publication") {
+#        name <- paste0("pmid_", name)
+#      }
+
       if (type == "dataset") {
+        annotations <- dataset_annots(row)
         syn_id <- save_folder_to_synapse(
           synapseclient,
           name,
-          parent_folder[[type]],
+          parent_folder[["dataset"]],
           annotations
         )
-      } else {
+      } else if (type == "file") {
+
+        # Get parent ID (dataset folder ID) for data file
+        res <- tables$datasets[grepl(paste0("^", row[["datasetName"]], "$"), tables$datasets[["datasetName"]], ignore.case = TRUE), ][["datasetId"]] #nolint
+        dataset_folder <- unlist(res[!is.na(res)]) %>%
+          stringr::str_replace_all(c("\\[" = "", "\\\"" = "", "\\]" = ""))
+
+        annotations <- file_annots(row, dataset_folder, tables$grants, tables$datasets)
         syn_id <- save_file_to_synapse(
           synapseclient,
           name,
-          parent_folder[[type]],
+          dataset_folder,
           annotations
         )
-      }
-#      syn_id <- "syn123"
-      new_portal_row <- switch(type,
-        "publication" = publication_row(
-          syn_id, row, 
-          tables$grants, 
-          tables$datasets
-        ),
-        "dataset" = dataset_row(
-          syn_id, row,
-          tables$publications
-        ),
-        "tool" = tool_row(
-          syn_id, row, 
-          tables$publications
+      } else {
+#        annotations <- switch(type,
+#          "publication" = publication_annots(row),
+#          "tool" = tool_annots(row, tables$grant)
+#        )
+#        syn_id <- save_file_to_synapse(
+#          synapseclient,
+#          name,
+#          parent_folder[[type]],
+#          annotations
+#        )
+        syn_id <- ""
+      }      
+      
+      if (type != "file") {
+        new_portal_row <- switch(type,
+          "publication" = publication_row(
+            syn_id, row, 
+            tables$grants, 
+            tables$datasets
+          ),
+          "dataset" = dataset_row(
+            syn_id, row,
+            tables$publications
+          ),
+          "tool" = tool_row(
+            syn_id, row, 
+            tables$publications
+          )
         )
-      )
+        syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
+      }
 #      output$diag <- DT::renderDT(new_portal_row)
-      syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
+#      syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
 
       ### update stats on overview tab
       tables <<- get_tables()

@@ -97,10 +97,32 @@ dataset_annots <- function(manifest) {
   )
 }
 tool_annots <- function(manifest, grants) {
+  # some tools may be annotated with multiple grants.
+  split_grants <- lapply(
+    stringr::str_split(manifest[["grantNumber"]], ","), trimws
+  )[[1]]
   list(
     displayName = manifest[["tool"]],
-    grantId = grants[grants$grantNumber == manifest[["grantNumber"]], ]$grantId, #nolint
+    grantId = paste(grants[grants$grantNumber == split_grants, ]$grantId, collapse = ", "), #nolint
     toolType = manifest[["toolType"]]
+  )
+}
+file_annots <- function(manifest, parent, grants, datasets) {
+  list(
+    fileName = manifest[["fileName"]],
+    name = manifest[["fileName"]],
+    datasets = split_and_search(manifest[["datasetName"]], datasets, "datasetName", "datasetAlias"), #nolint
+    parentId = parent,
+    assay = manifest[["assay"]],
+    platform = manifest[["platform"]],
+    dataFormat = manifest[["dataFormat"]],
+    species = manifest[["species"]],
+    gender = manifest[["sex"]],
+    tumorType = manifest[["tumorType"]],
+    tissue = manifest[["tissue"]],
+    grantName = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantName"), #nolint
+    grantType = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "grantType"), #nolint
+    consortium = split_and_search(manifest[["grantNumber"]], grants, "grantNumber", "consortium") #nolint
   )
 }
 
@@ -112,7 +134,7 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
     journal = manifest[["journal"]],
     pubMedId = manifest[["pubMedId"]],
     pubMedUrl = manifest[["pubMedUrl"]],
-    pubMedLink = create_url_markdown(paste0("PMID:", manifest[["pubMedId"]]), manifest[["pubMedUrl"]]), #nonlint
+    pubMedLink = create_url_markdown(paste0("PMID:", manifest[["pubMedId"]]), manifest[["pubMedUrl"]]), #nolint
     publicationTitle = manifest[["publicationTitle"]],
     publicationYear = manifest[["publicationYear"]],
     keywords = manifest[["keywords"]],
@@ -182,7 +204,7 @@ dataset_row <- function(syn_id, manifest, publications) {
     )    
   )
 }
-tool_row <- function(syn_id, manifest, publications) {
+tool_row <- function(syn_id, publications) {
   tibble(
     toolId = syn_id,
     toolName = manifest[["tool"]],

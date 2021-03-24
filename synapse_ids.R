@@ -13,10 +13,9 @@ portal_table <- list(
   "dataset" = "syn21897968",
   "tool" = "syn21930566",
   "project" = "syn21868602",
-  "grant" = "syn21918972"
-)
-
-fileview <- list(
+  "grant" = "syn21918972",
   "file" = "syn9630847"
 )
+
+#annots_table <- "syn25322361"
 
