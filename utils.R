@@ -10,11 +10,12 @@ syn_prettify <- function(name) {
 ## a column to be a StringList, e.g. '["a", "b"]' instead of 'a, b'.
 create_listed_annots <- function(annots, delim = ",") {
   split_annots <- lapply(stringr::str_split(annots, delim), trimws)[[1]]
-  paste0(
+  res <- paste0(
     "[\"",
     paste0(split_annots, collapse = "\", \""),
     "\"]"
   )
+  res
 }
 
 
@@ -182,7 +183,8 @@ dataset_row <- function(syn_id, manifest, publications) {
         create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantNumber")), #nolint
         create_listed_annots(manifest[["grantNumber"]])
     ),
-    publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
+    #publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
+    publicationId = NA,
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
     publication = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "pubMedLink", remove_chars = FALSE)), #nolint
     externalLink = ifelse(
@@ -204,7 +206,7 @@ dataset_row <- function(syn_id, manifest, publications) {
     )    
   )
 }
-tool_row <- function(syn_id, publications) {
+tool_row <- function(syn_id, manifest, publications) {
   tibble(
     toolId = syn_id,
     toolName = manifest[["tool"]],
@@ -221,7 +223,8 @@ tool_row <- function(syn_id, publications) {
     grantId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantId")), #nolint
     grantName = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "grantName")), #nolint
     grantNumber = create_listed_annots(manifest[["grantNumber"]]),
-    publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
+    #publicationId = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "publicationId")), #nolint
+    publicationId = NA,
     publicationTitle = create_listed_annots(manifest[["publicationTitle"]]),
     publication = create_listed_annots(split_and_search(manifest[["publicationTitle"]], publications, "publicationTitle", "pubMedLink", remove_chars = FALSE)), #nolint
   )

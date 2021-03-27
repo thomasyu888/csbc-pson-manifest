@@ -301,11 +301,7 @@ server <- function(input, output, session) {
 
     apply(manifest, 1, function(row) {
 
-## Skipping some steps for now; we only need to create entities for files
       name <- row[[ id[[type]] ]]
-#      if (type == "publication") {
-#        name <- paste0("pmid_", name)
-#      }
 
       if (type == "dataset") {
         annotations <- dataset_annots(row)
@@ -318,7 +314,7 @@ server <- function(input, output, session) {
       } else if (type == "file") {
 
         # Get parent ID (dataset folder ID) for data file
-        res <- tables$datasets[grepl(paste0("^", row[["datasetName"]], "$"), tables$datasets[["datasetName"]], ignore.case = TRUE), ][["datasetId"]] #nolint
+        res <- tables$datasets[grepl(paste0("^", row[["datasetId"]], "$"), tables$datasets[["datasetAlias"]], ignore.case = TRUE), ][["datasetId"]] #nolint
         dataset_folder <- unlist(res[!is.na(res)]) %>%
           stringr::str_replace_all(c("\\[" = "", "\\\"" = "", "\\]" = ""))
 
@@ -330,6 +326,11 @@ server <- function(input, output, session) {
           annotations
         )
       } else {
+
+### Skip making entities for publications and tools for now
+#        if (type == "publication") {
+#          name <- paste0("pmid_", name)
+#        }
 #        annotations <- switch(type,
 #          "publication" = publication_annots(row),
 #          "tool" = tool_annots(row, tables$grant)
