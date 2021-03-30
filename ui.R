@@ -112,7 +112,7 @@ body <- dashboardBody(
           ),
 
           fileInput(
-            "new_std_terms",
+            "new_cv_terms",
             label = "Additional Standard Terms (.xlsx)",
             accept= c(
               ".xlsx",

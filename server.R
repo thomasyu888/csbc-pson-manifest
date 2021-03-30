@@ -114,7 +114,7 @@ server <- function(input, output, session) {
 
   ### portal table information for annotations later
   tables <- list()
-  std_terms <- tibble()
+  cv_terms <- tibble()
 
   ## SYNAPSE LOGIN ############
   session$sendCustomMessage(type = "read_cookie", message = list())
@@ -128,11 +128,11 @@ server <- function(input, output, session) {
       display_quickview(output, tables)
 
       # get controlled-vocabulary list
-      std_terms <<- get_synapse_annotations("syn25322361", syn) %>% 
+      cv_terms <<- get_synapse_annotations("syn25322361", syn) %>% 
         select(key, value, columnType) %>% 
         unique()
       output$terms <- DT::renderDT(
-        std_terms,
+        cv_terms,
         options = list(pageLength = 50) 
       )
 
@@ -212,9 +212,9 @@ server <- function(input, output, session) {
     updateTabsetPanel(session, "validator_tabs", selected = "preview_tab")
   })
 
-  observeEvent(input$new_std_terms, {
+  observeEvent(input$new_cv_terms, {
     tryCatch({
-      new_terms <- readxl::read_excel(input$new_std_terms$datapath)
+      new_terms <- readxl::read_excel(input$new_cv_terms$datapath)
       if (nrow(new_terms) > 0) {
         new_terms <- new_terms[, names(new_terms) %in% c("Category", "standard_name", "key", "value")] %>% #nolint
           plyr::rename(
@@ -227,9 +227,9 @@ server <- function(input, output, session) {
               c("outDataType" = "outputDataType", "Assay" = "assay", "Tumor Type" = "tumorType")) #nolint
           ) %>%
           add_column(columnType = "STRING")
-        std_terms <<- unique(bind_rows(std_terms, new_terms))
+        cv_terms <<- unique(bind_rows(cv_terms, new_terms))
         output$terms <- DT::renderDT(
-          std_terms,
+          cv_terms,
           options = list(pageLength = 50))
       }
     }, error = function(err) {
@@ -260,7 +260,7 @@ server <- function(input, output, session) {
       ),
       invalid_cols = check_annotation_keys(
         manifest,
-        std_terms,
+        cv_terms,
         whitelist_keys = c(setdiff(template[[type]], std_cols), "Notes", "notes"),
         success_msg = "All column names are valid",
         fail_msg = "Some column names are invalid",
@@ -274,7 +274,7 @@ server <- function(input, output, session) {
       ),
       invalid_vals = check_listed_values(
         manifest,
-        std_terms
+        cv_terms
       )
     )
     if (type != "file") {
