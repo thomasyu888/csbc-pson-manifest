@@ -1,8 +1,41 @@
+#' Customizations
+COLOR = "purple"
+SIDE_WIDTH = 260
+TITLE = "CSBC/PS-ON Manifests"
+
+
+#' Sidebar
+sidebar <- dashboardSidebar(
+  width = SIDE_WIDTH,
+  sidebarMenu(
+    id = "tabs",
+    menuItem("Overview", tabName = "home", icon = icon("dashboard")),
+    menuItem("Validate and Upload", tabName = "validator",
+             icon = icon("cloud-upload-alt")
+    ),
+    menuItem("Portal Quickview", tabName = "quickview",
+             icon = icon("desktop")
+    )
+  ),
+  HTML("<footer>
+            Made with ♥ and dccvalidator functions<br/>
+            Supported by U24-CA209923<br/>
+            Powered by Sage Bionetworks
+      </footer>"
+  )
+)
+
+#' body
+body <- dashboardBody()
+
+
 #' The application User-Interface
 #' 
 #' @param request Internal parameter for `{shiny}`. 
 #'     DO NOT REMOVE.
 #' @import shiny
+#' @import shinydashboard
+#' @import waiter
 #' @noRd
 app_ui <- function(request) {
   tagList(
@@ -16,9 +49,15 @@ app_ui <- function(request) {
       ),
       color = "#424874"
     ),
-    # List the first level UI elements here 
-    fluidPage(
-      h1("csbcPsonManifest")
+    # Dashboard page
+    dashboardPage(
+      skin = COLOR,
+      dashboardHeader(
+        titleWidth = SIDE_WIDTH,
+        title = TITLE
+      ),
+      sidebar,
+      body
     )
   )
 }
