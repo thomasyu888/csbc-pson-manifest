@@ -1,0 +1,12 @@
+Package: csbc-pson-manifest
+Title: CSBC PSON manifest
+Version: 0.0.0.9000
+Authors@R: person('Verena', 'Chung', email = 'verena.chung@sagebionetworks.org', role = c('cre', 'aut'))
+Description: A Shiny app to add manifests to the Cancer Complexity Knowledge Portal
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports: 
+    htmltools
