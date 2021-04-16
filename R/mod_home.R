@@ -10,25 +10,21 @@
 mod_home_ui <- function(id){
   ns <- NS(id)
   tagList(
-    fluidPage(
-      h2("CSBC/PS-ON Manifest Curator", align = "center"),
-      h4("Add metadata to the Cancer Complexity Knowledge Portal",
-         align = "center"),
-      br(),
-      h4(strong("Overview")),
-      p("So far, we have annotated..."),
-      fluidRow(
-        #valueBoxOutput("num_grants", width = 3),
-        valueBoxOutput("num_pubs", width = 3) #,
-        # valueBoxOutput("num_datasets", width = 3),
-        # valueBoxOutput("num_files", width = 3),
-        # valueBoxOutput("num_tools", width = 3),
-      ),
-      fluidRow(
-        p("Let's annotate even more! Go to ", strong("Validate and Upload"),
-          " to start.")
-      )
-    )
+    h2("CSBC/PS-ON Manifest Curator", align = "center"),
+    h4("Add metadata to the Cancer Complexity Knowledge Portal",
+       align = "center"),
+    br(),
+    h4(strong("Overview")),
+    p("So far, we have annotated..."),
+    fluidRow(
+      #valueBoxOutput("num_grants", width = 3),
+      valueBoxOutput(ns("num_pubs"), width = 3),
+      valueBoxOutput(ns("num_datasets"), width = 3),
+      valueBoxOutput(ns("num_files"), width = 3),
+      valueBoxOutput(ns("num_tools"), width = 3),
+    ),
+    p("Let's annotate even more! Go to ", strong("Validate and Upload"),
+      " to start.")
   )
 }
 
@@ -41,35 +37,38 @@ mod_home_server <- function(input, output, session){
   # tables <- reactive({
   #   get_tables()
   # })
-  # tables <<- get_tables()
-  output$num_pubs <- renderValueBox({
-    tables <- get_tables()
-    valueBox(
-      # formatC(nrow(tables$publications), format = "d", big.mark = ","),
-      30,
+  tables <<- get_tables()
+  output$num_pubs <- shinydashboard::renderValueBox({
+    # tables <- get_tables()
+    shinydashboard::valueBox(
+      formatC(nrow(tables$publications), format = "d", big.mark = ","),
       "Publications",
-      icon = icon("book-open"), color = "maroon"
+      icon = icon("book-open"),
+      color = "maroon"
     )
   })
-  # output$num_datasets <- renderValueBox({
-  #   valueBox(
-  #     nrow(tables$datasets), "Datasets",
-  #     icon = icon("cubes"), color = "olive"
-  #   )
-  # })
-  # output$num_files <- renderValueBox({
-  #   valueBox(
-  #     formatC(nrow(tables$files), format = "d", big.mark = ","),
-  #     "Data files",
-  #     icon = icon("file"), color = "yellow"
-  #   )
-  # })
-  # output$num_tools <- renderValueBox({
-  #   valueBox(
-  #     nrow(tables$tools), "Tools",
-  #     icon = icon("tools"), color = "light-blue"
-  #   )
-  # })
+  output$num_datasets <- renderValueBox({
+    # tables <- get_tables()
+    valueBox(
+      nrow(tables$datasets), "Datasets",
+      icon = icon("cubes"), color = "olive"
+    )
+  })
+  output$num_files <- renderValueBox({
+    # tables <- get_tables()
+    valueBox(
+      formatC(nrow(tables$files), format = "d", big.mark = ","),
+      "Data files",
+      icon = icon("file"), color = "yellow"
+    )
+  })
+  output$num_tools <- renderValueBox({
+    # tables <- get_tables()
+    valueBox(
+      nrow(tables$tools), "Tools",
+      icon = icon("tools"), color = "light-blue"
+    )
+  })
 }
     
 ## To be copied in the UI
