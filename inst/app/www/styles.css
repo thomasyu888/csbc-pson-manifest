@@ -1,0 +1,45 @@
+/*** Top navigation bar ***/
+/*
+.main-header {
+    max-height: 50px
+}
+
+.main-header .logo {
+    height: 70px;
+    font-size: 21px;
+    padding-top: 10px
+}
+
+.sidebar-toggle {
+    height: 15px;
+    padding-top: 25px !important
+}
+
+.navbar {
+    min-height: 50px !important
+}
+
+.message-menu {
+    padding-top: 5px
+}
+*/
+
+/*** Box title ***/
+.box-header h3.box-title {
+   font-weight: bold;
+   font-size: 14px;
+}
+
+/*** Footer ***/
+footer {
+    position: absolute; 
+    padding: 18px; 
+    left: 0; 
+    bottom: 0; 
+    width: 100%; 
+    background-color: #D0D6DC; 
+    color: #465362; 
+    font-size: 10px; 
+    text-align: center;
+    z-index: 1000
+}
