@@ -39,7 +39,6 @@ mod_home_server <- function(input, output, session){
   # })
   tables <<- get_tables()
   output$num_pubs <- shinydashboard::renderValueBox({
-    # tables <- get_tables()
     shinydashboard::valueBox(
       formatC(nrow(tables$publications), format = "d", big.mark = ","),
       "Publications",
@@ -48,14 +47,12 @@ mod_home_server <- function(input, output, session){
     )
   })
   output$num_datasets <- renderValueBox({
-    # tables <- get_tables()
     valueBox(
       nrow(tables$datasets), "Datasets",
       icon = icon("cubes"), color = "olive"
     )
   })
   output$num_files <- renderValueBox({
-    # tables <- get_tables()
     valueBox(
       formatC(nrow(tables$files), format = "d", big.mark = ","),
       "Data files",
@@ -63,7 +60,6 @@ mod_home_server <- function(input, output, session){
     )
   })
   output$num_tools <- renderValueBox({
-    # tables <- get_tables()
     valueBox(
       nrow(tables$tools), "Tools",
       icon = icon("tools"), color = "light-blue"
