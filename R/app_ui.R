@@ -3,7 +3,6 @@ COLOR = "purple"
 SIDE_WIDTH = 260
 TITLE = "CSBC/PS-ON Manifests"
 
-
 #' Sidebar
 sidebar <- dashboardSidebar(
   width = SIDE_WIDTH,
@@ -24,9 +23,6 @@ sidebar <- dashboardSidebar(
       </footer>"
   )
 )
-
-#' body
-body <- dashboardBody()
 
 
 #' The application User-Interface
@@ -57,7 +53,13 @@ app_ui <- function(request) {
         title = TITLE
       ),
       sidebar,
-      body
+      dashboardBody(
+        shinydashboard::tabItems(
+          shinydashboard::tabItem("home", mod_home_ui("home_ui_1")),
+          shinydashboard::tabItem("validator", fluidPage()),
+          shinydashboard::tabItem("quickview", fluidPage())
+        )
+      )
     )
   )
 }
@@ -84,10 +86,10 @@ golem_add_external_resources <- function(){
       app_title = 'csbcPsonManifest'
     ),
     includeScript(system.file("inst/app/www/read_cookie.js",
-                              package = "csbcPsonManifest")),
+                              package = "csbcPsonManifest")) # ,
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
-    tags$link(rel="stylesheet", type="text/css", href="www/styles.css")
+    # tags$link(rel="stylesheet", type="text/css", href="www/styles.css")
   )
   
 }

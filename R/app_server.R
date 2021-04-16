@@ -8,6 +8,7 @@ app_server <- function( input, output, session ) {
   # List the first level callModules here
   #Add synapse login
   session$sendCustomMessage(type = "readCookie", message = list())
+  source_python("R/synapse_funcs.py")
   
   syn <- .GlobalEnv$synapseclient$Synapse()
   
@@ -27,7 +28,9 @@ app_server <- function( input, output, session ) {
       ### login and update session; otherwise, notify to login to Synapse first
       tryCatch({
         syn$login(sessionToken = input$cookie)
-        
+        # tables <<- reactive({
+        #   get_tables()
+        # })
         ### update waiter loading screen once login successful
         waiter::waiter_update(
           html = tagList(
@@ -53,10 +56,12 @@ app_server <- function( input, output, session ) {
         )
         
       })
+
     }
-    output$title <- shiny::renderUI({
-      shiny::titlePanel(sprintf("Welcome, %s", syn$getUserProfile()$userName))
-    })
+    # output$title <- shiny::renderUI({
+    #   shiny::titlePanel(sprintf("Welcome, %s", syn$getUserProfile()$userName))
+    # })
+    shiny::callModule(mod_home_server, "home_ui_1")
     
   })
 }

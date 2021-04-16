@@ -162,6 +162,48 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
     dataset = manifest[["dataset"]]
   )
 }
+
+#' Get Synapse tables used for the portal.
+get_tables <- function() {
+  grants <- get_portal_table(
+    portal_table[["grant"]],
+    c("grantId", "grantName", "grantNumber", "grantInstitution",
+      "themeId", "theme", "consortiumId", "consortium")
+  )
+  publications <- get_portal_table(
+    portal_table[["publication"]],
+    c("publicationId", "publicationTitle", "grantId", "grantNumber",
+      "grantName", "themeId", "theme", "consortiumId", "consortium"
+    )
+  )
+  datasets <- get_portal_table(
+    portal_table[["dataset"]],
+    c("datasetId", "datasetName", "datasetAlias")
+  )
+  tools <- get_portal_table(
+    portal_table[["tool"]],
+    c("toolId", "toolName")
+  )
+  files <- get_portal_table(
+    portal_table[["file"]],
+    c("fileName", "datasets", "parentId")
+  )
+  list(
+    "grants" = grants,
+    "publications" = publications,
+    "datasets" = datasets,
+    "files" = files,
+    "tools" = tools
+  )
+}
+
+#' Get selected coloumns from a Synapse table.
+get_portal_table <- function(table_id, cols) {
+  query <- sprintf("SELECT %s FROM %s", paste0(cols, collapse=","), table_id)
+  return(syn_table_query(query)$asDataFrame())
+}
+
+
 dataset_row <- function(syn_id, manifest, publications) {
   tibble(
     datasetId = syn_id,
