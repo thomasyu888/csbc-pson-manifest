@@ -1,52 +1,62 @@
+#' The application server-side
+#' 
+#' @param input,output,session Internal parameters for {shiny}. 
+#'     DO NOT REMOVE.
 #' @import shiny
-app_server <- function(input, output, session) {
-  
+#' @noRd
+app_server <- function( input, output, session ) {
+  # List the first level callModules here
   #Add synapse login
   session$sendCustomMessage(type = "readCookie", message = list())
-  
-  ## Show message if user is not logged in to synapse
-  shiny::observeEvent(input$authorized, {
-    shiny::showModal(
-      shiny::modalDialog(
-        title = "Not logged in",
-        HTML("You must log in to <a href=\"https://www.synapse.org/\">Synapse</a> to use this application. Please log in, and then refresh this page.")
-      )
-    )
-  })
   
   syn <- .GlobalEnv$synapseclient$Synapse()
   
   observeEvent(input$cookie, {
-    
-    syn$login(sessionToken = input$cookie)
-    
+
+    if (input$cookie == "unauthorized") {
+      waiter::waiter_update(
+        html = tagList(
+          img(src = "www/synapse_logo.png",
+              height = "120px"),
+          h3("Looks like you're not logged in!"),
+          span("Please ", a("login", href = "https://www.synapse.org/#!LoginPlace:0", target = "_blank"),
+               " to Synapse, then refresh this page.")
+        )
+      )
+    } else {
+      ### login and update session; otherwise, notify to login to Synapse first
+      tryCatch({
+        syn$login(sessionToken = input$cookie)
+        
+        ### update waiter loading screen once login successful
+        waiter::waiter_update(
+          html = tagList(
+            img(src = "www/synapse_logo.png",
+                height = "120px"),
+            h3(sprintf("Welcome, %s!", syn$getUserProfile()$userName))
+          )
+        )
+        Sys.sleep(2)
+        waiter::waiter_hide()
+      }, error = function(err) {
+        Sys.sleep(2)
+        waiter::waiter_update(
+          html = tagList(
+            img(src = "www/synapse_logo.png", height = "120px"),
+            h3("Login error"),
+            span(
+              "There was an error with the login process. Please refresh your Synapse session by logging out of and back in to",
+              a("Synapse", href = "https://www.synapse.org/", target = "_blank"),
+              ", then refresh this page."
+            )
+          )
+        )
+        
+      })
+    }
     output$title <- shiny::renderUI({
       shiny::titlePanel(sprintf("Welcome, %s", syn$getUserProfile()$userName))
     })
     
-    group_object <- shiny::callModule(
-      mod_about_page_server, 
-      "about_page_ui_1", 
-      syn, 
-      data_config
-    )
-    
-    purrr::walk2(
-      list(
-        mod_summary_snapshot_server,
-        mod_file_status_server,
-        mod_study_summary_server,
-        mod_new_submissions_server
-      ),
-      list(
-        "summary_snapshot_ui_1",
-        "file_status_ui_1",
-        "study_summary_ui_1",
-        "new_submissions_ui_1"
-      ),
-      shiny::callModule,
-      group_object,
-      data_config
-    ) 
   })
 }

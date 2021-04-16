@@ -5,7 +5,7 @@
 #' 
 #' @noRd
 app_sys <- function(...){
-  system.file(..., package = "csbc-pson-manifest")
+  system.file(..., package = "csbcPsonManifest")
 }
 
 
