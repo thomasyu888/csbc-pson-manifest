@@ -57,7 +57,7 @@ app_ui <- function(request) {
         shinydashboard::tabItems(
           shinydashboard::tabItem("home", mod_home_ui("home_ui_1")),
           shinydashboard::tabItem("validator", fluidPage()),
-          shinydashboard::tabItem("quickview", fluidPage())
+          shinydashboard::tabItem("quickview", mod_quickview_ui("quickview_ui_1"))
         )
       )
     )

@@ -70,6 +70,7 @@ app_server <- function( input, output, session ) {
     #   shiny::titlePanel(sprintf("Welcome, %s", syn$getUserProfile()$userName))
     # })
     shiny::callModule(mod_home_server, "home_ui_1")
+    shiny::callModule(mod_quickview_server, "quickview_ui_1")
     
   })
 }

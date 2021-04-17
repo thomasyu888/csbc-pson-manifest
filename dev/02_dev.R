@@ -21,6 +21,7 @@ usethis::use_package( "waiter" )
 ## Add modules ----
 ## Create a module infrastructure in R/
 golem::add_module( name = "home" ) # Name of the module
+golem::add_module( name = "quickview" )
 
 ## Add helper functions ----
 ## Creates ftc_* and utils_*
