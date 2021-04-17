@@ -56,7 +56,7 @@ app_ui <- function(request) {
       dashboardBody(
         shinydashboard::tabItems(
           shinydashboard::tabItem("home", mod_home_ui("home_ui_1")),
-          shinydashboard::tabItem("validator", fluidPage()),
+          shinydashboard::tabItem("validator", mod_validator_ui("validator_ui_1")),
           shinydashboard::tabItem("quickview", mod_quickview_ui("quickview_ui_1"))
         )
       )
@@ -86,11 +86,10 @@ golem_add_external_resources <- function(){
       app_title = 'csbcPsonManifest'
     ),
     includeScript(system.file("inst/app/www/read_cookie.js",
-                              package = "csbcPsonManifest")) # ,
+                              package = "csbcPsonManifest"))# ,
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
     # tags$link(rel="stylesheet", type="text/css", href="www/styles.css")
   )
-  
 }
 

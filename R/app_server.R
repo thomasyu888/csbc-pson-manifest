@@ -71,6 +71,7 @@ app_server <- function( input, output, session ) {
     # })
     shiny::callModule(mod_home_server, "home_ui_1")
     shiny::callModule(mod_quickview_server, "quickview_ui_1")
+    shiny::callModule(mod_validator_server, "validator_ui_1")
     
   })
 }
