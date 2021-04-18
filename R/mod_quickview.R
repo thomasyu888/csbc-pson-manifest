@@ -52,26 +52,26 @@ mod_quickview_ui <- function(id){
 #' quickview Server Function
 #'
 #' @noRd 
-mod_quickview_server <- function(input, output, session){
+mod_quickview_server <- function(input, output, session, values){
   ns <- session$ns
   output$grants_table <- DT::renderDT(
-    tail(tables$grants, 10),
+    tail(isolate(values$tables)$grants, 10),
     options = list(dom = 't'), rownames = FALSE
   )
   output$pubs_table <- DT::renderDT(
-    tail(tables$publications, 10),
+    tail(isolate(values$tables)$publications, 10),
     options = list(dom = 't'), rownames = FALSE
   )
   output$datasets_table <- DT::renderDT(
-    tail(tables$datasets, 10),
+    tail(isolate(values$tables)$datasets, 10),
     options = list(dom = 't'), rownames = FALSE
   )
   output$files_table <- DT::renderDT(
-    tail(tables$files, 10),
+    tail(isolate(values$tables)$files, 10),
     options = list(dom = 't'), rownames = FALSE
   )
   output$tools_table <- DT::renderDT(
-    tail(tables$tools, 10),
+    tail(isolate(values$tables)$tools, 10),
     options = list(dom = 't'), rownames = FALSE
   )
 }

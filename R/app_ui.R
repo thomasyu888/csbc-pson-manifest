@@ -1,5 +1,5 @@
 #' Customizations
-COLOR = "purple"
+COLOR = "blue"
 SIDE_WIDTH = 260
 TITLE = "CSBC/PS-ON Manifests"
 
@@ -58,6 +58,9 @@ app_ui <- function(request) {
           shinydashboard::tabItem("home", mod_home_ui("home_ui_1")),
           shinydashboard::tabItem("validator", mod_validator_ui("validator_ui_1")),
           shinydashboard::tabItem("quickview", mod_quickview_ui("quickview_ui_1"))
+        ),
+        tags$head(
+          tags$link(rel = "stylesheet", type = "text/css", href = "www/styles.css")
         )
       )
     )
@@ -80,7 +83,7 @@ golem_add_external_resources <- function(){
  
   tags$head(
     golem::activate_js(),
-    favicon(),
+    # favicon(),
     bundle_resources(
       path = app_sys('app/www'),
       app_title = 'csbcPsonManifest'

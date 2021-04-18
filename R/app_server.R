@@ -19,6 +19,7 @@ app_server <- function( input, output, session ) {
   source_python("R/synapse_funcs.py")
   
   syn <- .GlobalEnv$synapseclient$Synapse()
+  values <- reactiveValues()
   
   observeEvent(input$cookie, {
 
@@ -36,9 +37,11 @@ app_server <- function( input, output, session ) {
       ### login and update session; otherwise, notify to login to Synapse first
       tryCatch({
         syn$login(sessionToken = input$cookie)
-        # tables <<- reactive({
-        #   get_tables()
-        # })
+        values$tables <- get_tables()
+        # get controlled-vocabulary list
+        values$cv_terms <- get_synapse_annotations("syn25322361", syn) %>%
+          select(key, value, columnType) %>%
+          unique()
         ### update waiter loading screen once login successful
         waiter::waiter_update(
           html = tagList(
@@ -50,6 +53,7 @@ app_server <- function( input, output, session ) {
         Sys.sleep(2)
         waiter::waiter_hide()
       }, error = function(err) {
+        print(err)
         Sys.sleep(2)
         waiter::waiter_update(
           html = tagList(
@@ -69,9 +73,9 @@ app_server <- function( input, output, session ) {
     # output$title <- shiny::renderUI({
     #   shiny::titlePanel(sprintf("Welcome, %s", syn$getUserProfile()$userName))
     # })
-    shiny::callModule(mod_home_server, "home_ui_1")
-    shiny::callModule(mod_quickview_server, "quickview_ui_1")
-    shiny::callModule(mod_validator_server, "validator_ui_1")
+    shiny::callModule(mod_home_server, "home_ui_1", values)
+    shiny::callModule(mod_quickview_server, "quickview_ui_1", values)
+    shiny::callModule(mod_validator_server, "validator_ui_1", values)
     
   })
 }

@@ -32,13 +32,14 @@ mod_home_ui <- function(id){
 #' home Server Function
 #'
 #' @noRd 
-mod_home_server <- function(input, output, session){
+mod_home_server <- function(input, output, session, values){
   ns <- session$ns
   # tables <- reactive({
   #   get_tables()
   # })
-  tables <<- get_tables()
+  # tables <<- get_tables()
   output$num_pubs <- shinydashboard::renderValueBox({
+    tables <- isolate(values$tables)
     shinydashboard::valueBox(
       formatC(nrow(tables$publications), format = "d", big.mark = ","),
       "Publications",
@@ -47,12 +48,14 @@ mod_home_server <- function(input, output, session){
     )
   })
   output$num_datasets <- renderValueBox({
+    tables <- isolate(values$tables)
     valueBox(
       nrow(tables$datasets), "Datasets",
       icon = icon("cubes"), color = "olive"
     )
   })
   output$num_files <- renderValueBox({
+    tables <- isolate(values$tables)
     valueBox(
       formatC(nrow(tables$files), format = "d", big.mark = ","),
       "Data files",
@@ -60,6 +63,7 @@ mod_home_server <- function(input, output, session){
     )
   })
   output$num_tools <- renderValueBox({
+    tables <- isolate(values$tables)
     valueBox(
       nrow(tables$tools), "Tools",
       icon = icon("tools"), color = "light-blue"
