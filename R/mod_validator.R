@@ -203,6 +203,7 @@ mod_validator_server <- function(input, output, session, values){
           ) %>%
           add_column(columnType = "STRING")
         # cv_terms <<- unique(bind_rows(cv_terms, new_terms))
+        # TODO: Check if the reactiveValue can be reset
         values$cv_terms <- unique(bind_rows(cv_terms, new_terms))
       #   output$terms <- DT::renderDT(
       #     cv_terms,
@@ -303,7 +304,7 @@ mod_validator_server <- function(input, output, session, values){
         )
       } else {
 
-        ### Skip making entities for publications and tools for now
+        ### TODO: Skip making entities for publications and tools for now
         #        if (type == "publication") {
         #          name <- paste0("pmid_", name)
         #        }
