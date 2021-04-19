@@ -283,6 +283,7 @@ mod_validator_server <- function(input, output, session, values){
       if (type == "dataset") {
         annotations <- dataset_annots(row)
         syn_id <- save_folder_to_synapse(
+          syn,
           synapseclient,
           name,
           parent_folder[["dataset"]],
@@ -297,6 +298,7 @@ mod_validator_server <- function(input, output, session, values){
 
         annotations <- file_annots(row, dataset_folder, tables$grants, tables$datasets)
         syn_id <- save_file_to_synapse(
+          syn,
           synapseclient,
           name,
           dataset_folder,
@@ -337,13 +339,13 @@ mod_validator_server <- function(input, output, session, values){
                                    tables$publications
                                  )
         )
-        syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
+        syn$store(synapseclient$Table(portal_table[[type]], new_portal_row))
       }
       #      output$diag <- DT::renderDT(new_portal_row)
       #      syn_store(synapseclient$Table(portal_table[[type]], new_portal_row))
 
       ### update stats on overview tab
-      values$tables <- get_tables()
+      values$tables <- get_tables(syn)
       # TODO: make this tables value a reactive
       # display_overview_stats(output, tables)
       # display_quickview(output, tables)

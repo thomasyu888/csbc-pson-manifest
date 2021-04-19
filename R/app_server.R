@@ -37,7 +37,7 @@ app_server <- function( input, output, session ) {
       ### login and update session; otherwise, notify to login to Synapse first
       tryCatch({
         syn$login(sessionToken = input$cookie)
-        values$tables <- get_tables()
+        values$tables <- get_tables(syn)
         # get controlled-vocabulary list
         values$cv_terms <- get_synapse_annotations("syn25322361", syn) %>%
           select(key, value, columnType) %>%

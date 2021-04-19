@@ -45,7 +45,7 @@ split_and_search <- function(annots, table, search_col, output_col,
 
 
 ## Save new entity to Synapse; Folder for dataset manifest, File for others
-save_file_to_synapse <- function(synapseclient, name,
+save_file_to_synapse <- function(syn, synapseclient, name,
                                  parent, annotations) {
   name <- syn_prettify(name)
 
@@ -57,14 +57,14 @@ save_file_to_synapse <- function(synapseclient, name,
     parent = parent,
     annotations = annotations
   )
-  new_file <- syn_store(new_file)
+  new_file <- syn$store(new_file)
 
   # remove dummy file
   file.remove(name)
 
   new_file$id
 }
-save_folder_to_synapse <- function(synapseclient, name,
+save_folder_to_synapse <- function(syn, synapseclient, name,
                                    parent, annotations) {
   name <- syn_prettify(name)
   new_folder <- synapseclient$Folder(
@@ -72,7 +72,7 @@ save_folder_to_synapse <- function(synapseclient, name,
     parent = parent,
     annotations = annotations
   )
-  new_folder <- syn_store(new_folder)
+  new_folder <- syn$store(new_folder)
   new_folder$id
 }
 
@@ -164,27 +164,32 @@ publication_row <- function(syn_id, manifest, grants, datasets) {
 }
 
 #' Get Synapse tables used for the portal.
-get_tables <- function() {
+get_tables <- function(syn) {
   grants <- get_portal_table(
+    syn,
     portal_table[["grant"]],
     c("grantId", "grantName", "grantNumber", "grantInstitution",
       "themeId", "theme", "consortiumId", "consortium")
   )
   publications <- get_portal_table(
+    syn,
     portal_table[["publication"]],
     c("publicationId", "publicationTitle", "grantId", "grantNumber",
       "grantName", "themeId", "theme", "consortiumId", "consortium"
     )
   )
   datasets <- get_portal_table(
+    syn,
     portal_table[["dataset"]],
     c("datasetId", "datasetName", "datasetAlias")
   )
   tools <- get_portal_table(
+    syn,
     portal_table[["tool"]],
     c("toolId", "toolName")
   )
   files <- get_portal_table(
+    syn,
     portal_table[["file"]],
     c("fileName", "datasets", "parentId")
   )
@@ -198,9 +203,9 @@ get_tables <- function() {
 }
 
 #' Get selected coloumns from a Synapse table.
-get_portal_table <- function(table_id, cols) {
+get_portal_table <- function(syn, table_id, cols) {
   query <- sprintf("SELECT %s FROM %s", paste0(cols, collapse=","), table_id)
-  return(syn_table_query(query)$asDataFrame())
+  return(syn$tableQuery(query)$asDataFrame())
 }
 
 
